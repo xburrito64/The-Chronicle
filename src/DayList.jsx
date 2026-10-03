@@ -440,7 +440,7 @@ function DayList({
   onJumped,
   find,
   period,
-  tool = 'move', // 'move' | 'snip' | 'select' — see Tools.jsx
+  tool = 'move', // 'move' | 'snip' — see Tools.jsx
   onTool,
   picked, // [{ date, id }] gathered up by the select tool
   onPick,
@@ -1100,35 +1100,22 @@ function DayList({
       }
     }
 
-    // Both tools in one: a block works the way the move tool works it —
-    // pressed for its note, dragged to move, stretched by an edge — unless
-    // it is one of several gathered up, which are carried together.
-    const carryMany = tool === 'both' && block && !e.target.dataset?.handle
-      && pickedRef.current.length > 1 && pickedRef.current.some((p) => p.date === date && p.id === block.id)
-    if (tool === 'both' && !carryMany && pickedRef.current.length > 0) handlers.current.onPick([])
+    // A block works the way it always has — pressed for its note, dragged
+    // to move, stretched by an edge — unless it is one of several gathered
+    // up, which are carried together.
+    const all = pickedRef.current
+    const carryMany = block && !e.target.dataset?.handle
+      && all.length > 1 && all.some((p) => p.date === date && p.id === block.id)
+    if (!carryMany && all.length > 0) handlers.current.onPick([])
 
-    if (tool === 'select' || carryMany) {
+    if (carryMany) {
       e.preventDefault()
-      const mine = { date, id: block.id }
-      const all = pickedRef.current
-      const isPicked = all.some((p) => p.date === date && p.id === block.id)
-      // A double click is still how to read what was written on it.
-      if (tool === 'select' && e.detail === 2) {
-        handlers.current.onSelect(date, block.id)
-        return
-      }
-      // Pressing one that is gathered up carries all of them; pressing one
-      // that isn't gathers up that one alone, and carries it.
-      const picks = isPicked ? all : [mine]
-      if (!isPicked) handlers.current.onPick(picks)
       setDragState({
         mode: 'grouppress', date, originX: e.clientX, originY: e.clientY,
         width: trackEl.getBoundingClientRect().width,
-        picks,
-        blocks: picks.map((p) => days[p.date]?.blocks.find((b) => b.id === p.id)).filter(Boolean),
-        clicked: mine,
-        // In the tool that is both, a click is still a click on that block.
-        opens: tool === 'both',
+        picks: all,
+        blocks: all.map((p) => days[p.date]?.blocks.find((b) => b.id === p.id)).filter(Boolean),
+        clicked: { date, id: block.id },
         days: 0,
         slots: 0,
       })
@@ -1288,12 +1275,9 @@ function DayList({
       } else if (d.mode === 'group') {
         if (d.slots || d.days) h.onMoveMany(d.picks, { days: d.days, slots: d.slots })
       } else if (d.mode === 'grouppress') {
-        // A click, not a drag: that block alone — or, where a click opens a
-        // note, that block's note.
-        if (d.opens) {
-          h.onPick([])
-          h.onSelect(d.clicked.date, d.clicked.id)
-        } else h.onPick([d.clicked])
+        // A click, not a drag: that block's note, as a click on any block.
+        h.onPick([])
+        h.onSelect(d.clicked.date, d.clicked.id)
       } else if (d.mode === 'marquee') {
         pickKey.current = ''
       } else if (d.mode === 'resize' || d.mode === 'move') {
@@ -1578,13 +1562,9 @@ function DayList({
                     ? 'Click a day to open it · ctrl+f finds · ctrl+scroll to resize'
                     : tool === 'snip'
                       ? 'Click a block to snip it in two at the line · drag the cut with the move tool to shift it · V goes back to moving'
-                      : selects(tool) && picked?.length
+                      : picked?.length
                         ? `${many(picked.length)} selected, ${formatDuration(pickedSlots)} · drag to move them · delete removes them · ctrl+c copies, ctrl+v puts them where you point · esc lets go`
-                        : tool === 'select'
-                          ? 'Drag a box over blocks to select them, across as many days as you like · shift adds more · double-click opens a note'
-                          : tool === 'both'
-                            ? 'Drag a block to move it, or drag anywhere else to select · click a block for its note · shift-click adds to the selection'
-                          : 'Pick a tag under a day to add time · click a block for its note, drag its middle to move it · ctrl+c copies a block, ctrl+v puts it at the time now · ctrl+f finds · ctrl+z undoes · ctrl+scroll to resize'}
+                        : 'Pick a tag under a day to add time · click a block for its note, drag it to move it · drag on empty space to select, shift-click adds · ctrl+c copies, ctrl+v pastes where you point · ctrl+f finds · ctrl+z undoes · ctrl+scroll to resize'}
             </span>
           )}
           {isDay && onTool && <Tools tool={tool} onTool={onTool} />}
