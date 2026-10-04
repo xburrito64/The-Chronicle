@@ -1,13 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ivy, keptUp } from './manuscript.js'
 import { stillness } from './loop.js'
-import { festivalOf } from './festivals.js'
 import { feastOf } from './hoursFeasts.js'
-import { FeastSky, FeastMiniature, LEAF, spritesFor } from './HoursFeasts.jsx'
+import { FeastSky, LEAF, spritesFor } from './HoursFeasts.jsx'
+import HoursDay from './HoursDays.jsx'
 import { useMinute } from '../useMinute.js'
 import { useFirstDay } from '../useFirstDay.js'
 import { useBirthdays } from '../useBirthdays.js'
 import { todayISO } from '../time.js'
+import { useTodaysFestival } from '../feastPreview.js'
 
 // Black Hours.
 //
@@ -39,6 +40,9 @@ import { todayISO } from '../time.js'
 
 // Which ivy grows. Any number will do; this one grows a handsome border.
 const SEED = 11
+// Feasts whose day brings a moving sky of its own (HoursSkies.jsx) in place
+// of the simple one: bats, falling stars, fireflies.
+const SKIES_OF_THEIR_OWN = new Set(['halloween', 'perseids', 'geminids', 'midsummer'])
 // The bird on the hour goes to sleep at Compline and wakes at Prime.
 const NIGHT_FROM = 21 * 60
 const NIGHT_UNTIL = 6 * 60
@@ -234,10 +238,9 @@ export default function ScriptScene({ days }) {
   // comes in at midnight with the page open.
   const firstDay = useFirstDay()
   const birthdays = useBirthdays()
-  const festival = festivalOf(todayISO(), firstDay, birthdays)
+  const festival = useTodaysFestival(firstDay, birthdays)
   const feast = feastOf(festival)
   const feastId = feast?.id ?? null
-  const advent = [festival, ...(festival?.also ?? [])].find((f) => f?.id === 'advent')
   const yours = [festival, ...(festival?.also ?? [])].some((f) => f?.id === 'birthday' && f.self)
   // Rounded, so the border is drawn again a few dozen times a day rather than
   // every minute. The book's anniversary is gilded whole.
@@ -368,14 +371,10 @@ export default function ScriptScene({ days }) {
         </div>
       )}
       {feast && <div className="feast-wash" aria-hidden="true" />}
-      {feast && !stillness() && (
+      {feast && !stillness() && !SKIES_OF_THEIR_OWN.has(feast.id) && (
         <FeastSky kind={feast.sky} tone={feast.border.paint === 'silver' ? 'silver' : 'gold'} />
       )}
-      {advent && (
-        <div className="hours-advent" aria-hidden="true">
-          <FeastMiniature id="advent" nth={advent.nth} lit size={58} />
-        </div>
-      )}
+      {festival && <HoursDay festivals={[festival, ...(festival.also ?? [])].filter((f) => feastOf(f))} />}
       <div ref={leaf} className="hours-leaf" aria-hidden="true" />
     </>
   )

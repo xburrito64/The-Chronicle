@@ -121,7 +121,7 @@ function Banderole({ w, h, words }) {
  * gold bursting from its bell. Drawn in the 100-tall box; the words on the
  * banner are BannerWords, so the right-hand one can be turned without them.
  */
-function Herald({ id }) {
+export function Herald({ id }) {
   const gold = `url(#${id}g)`
   const tube = (x) => 12 + (x + 6) * (20 / 160)
   const fringe = []
@@ -158,7 +158,7 @@ function Herald({ id }) {
  * The words on a herald's banner, centred at x. A long name is set a little
  * smaller and then drawn together to fit, rather than shrunk out of reading.
  */
-function BannerWords({ x, words }) {
+export function BannerWords({ x, words }) {
   const size = Math.min(16, Math.max(11.5, 150 / Math.max(1, words.length)))
   const tight = words.length * size * 0.62 > 64
   return (

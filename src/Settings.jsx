@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { PREVIEW_CHOICES, setFeastPreview, useFeastPreview } from './feastPreview.js'
 import { getIconSets, refillCovers } from './api.js'
 import TagIcon from './TagIcon.jsx'
 import TagEditor from './TagEditor.jsx'
@@ -359,7 +360,34 @@ function Look({ appearance, onChange, tags, onResetRows, onCoversFound }) {
           note="What to do while a tag is armed is still said there either way."
         />
       </section>
+
+      <FeastTrial />
     </>
+  )
+}
+
+/**
+ * Trying a feast day: today pretends to be the feast picked, so its look can
+ * be seen without waiting for it. Only until the app is closed.
+ */
+function FeastTrial() {
+  const tried = useFeastPreview()
+  return (
+    <section className="settingsgroup">
+      <h3>Try a feast day</h3>
+      <p className="settingsnote">
+        Today dresses as the day you pick, so you can see how it looks. Nothing is
+        saved, and it goes back to normal when the app is closed.
+      </p>
+      <select
+        className="feastpick"
+        value={tried ?? ''}
+        onChange={(e) => setFeastPreview(e.target.value)}
+      >
+        <option value="">Off — today is today</option>
+        {PREVIEW_CHOICES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+      </select>
+    </section>
   )
 }
 

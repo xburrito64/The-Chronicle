@@ -2474,6 +2474,17 @@ h1 {
   border: 1px solid color-mix(in srgb, var(--c-danger) 45%, var(--c-line));
   border-radius: var(--r-md);
 }
+.feastpick {
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  font: inherit;
+  color: var(--c-text);
+  background: var(--c-surface-hi);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.feastpick:focus-visible { outline: 2px solid var(--c-focus-ring); outline-offset: 2px; }
 .settingsbutton {
   justify-self: start;
   display: inline-flex;

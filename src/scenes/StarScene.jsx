@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { monthByTag, rankUps, completeDays, starField } from './starlit.js'
 import { MagicCircle, Seal, RankGem, Moonweed } from './StarParts.jsx'
-import { festivalOf } from './festivals.js'
 import {
   FestiveMark, FESTIVE_LINES, makePictures, FrostPane, Aurora, GuidingStar, Snowfall, crystalFlake,
   HallowPane, HallowNight, batFrames,
@@ -17,6 +16,7 @@ import { todayISO } from '../time.js'
 import { useMinute } from '../useMinute.js'
 import { useFirstDay } from '../useFirstDay.js'
 import { useBirthdays } from '../useBirthdays.js'
+import { useTodaysFestival } from '../feastPreview.js'
 
 // Starlit: a grimoire, open at night.
 //
@@ -87,7 +87,7 @@ export default function StarScene({ days, tags }) {
   useMinute()
   const firstDay = useFirstDay()
   const birthdays = useBirthdays()
-  const tonight = festivalOf(todayISO(), firstDay, birthdays)
+  const tonight = useTodaysFestival(firstDay, birthdays)
 
   const lastCast = useRef(-Infinity)
   // Set by the casting below: a burst of petals and butterflies where an

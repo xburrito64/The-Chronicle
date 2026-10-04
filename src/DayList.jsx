@@ -16,6 +16,7 @@ import { FestiveMark, Spider } from './scenes/Festive.jsx'
 import { FeastHeading } from './scenes/HoursFeasts.jsx'
 import { FeastGround, FeastBar } from './scenes/HoursFeastBars.jsx'
 import { feastOf } from './scenes/hoursFeasts.js'
+import { useFeastPreview, previewFestival } from './feastPreview.js'
 import { applyPaint, applyResize, layoutLanes, stripsOf, moveBlocks, clampShift, cutPartner } from './blocks.js'
 import Tools, { selects } from './Tools.jsx'
 import { pieceLook, runeSpans, RUNES_MIN_BAND, PEEK_MAX } from './blockLooks.js'
@@ -1468,6 +1469,8 @@ function DayList({
   const starlit = theme === 'starlit'
   const firstDay = useFirstDay()
   const birthdays = useBirthdays()
+  // A feast being tried in the settings, worn by today's row.
+  const tried = useFeastPreview()
   // Starlit ranks every tag by its hours this past month. Kept the same
   // object while the hours are the same: every row is handed it, and older
   // weeks arriving as you scroll change nothing about this past month.
@@ -1654,6 +1657,7 @@ function DayList({
               wiping={wiping}
               onArm={onArm}
               askWipe={askWipe}
+              tried={date === today ? tried : null}
               pickedIds={pickedOn.get(date)}
               snipAt={snipHover?.date === date ? snipHover : null}
               groupBlocks={groupOut?.[date]}
@@ -1692,7 +1696,7 @@ const DayRow = memo(function DayRow({
   theme, blockLook, keepPauses, labels, chipLook, showCovers, covers, tags,
   firstDay, birthdays, month, inPeriod, armedTagId, resizing, paintSpan, paintFrom,
   selectedId, searching, marks, currentAt, confirming, wiping, onArm, askWipe,
-  pickedIds, snipAt, groupBlocks,
+  pickedIds, snipAt, groupBlocks, tried,
 }) {
   const isDay = mode === 'day'
   const starlit = theme === 'starlit'
@@ -1719,7 +1723,8 @@ const DayRow = memo(function DayRow({
   // whatever festivals follow them.
   // Starlit only, so far.
   // Black Hours keeps the same days as its red-letter days (hoursFeasts.js).
-  const festival = starlit || scriptorium ? festivalOf(date, firstDay, birthdays) : null
+  const festival = !(starlit || scriptorium) ? null
+    : tried ? previewFestival(tried) : festivalOf(date, firstDay, birthdays)
   const feast = scriptorium ? feastOf(festival) : null
   let blocks = groupBlocks ?? (resizing?.date === date
     ? applyResize(day?.blocks ?? [], resizing.id, resizing.startSlot, resizing.endSlot, resizing.at)

@@ -2148,18 +2148,475 @@
   50% { opacity: 0.85; transform: scale(1); }
 }
 
-/* Advent's four candles at the corner of the desk, where the light comes
-   from — on a window wide enough to have a corner to spare. */
-.app > .hours-advent {
+/* --- on the day itself: what each feast keeps about the page ----------------
+   scenes/HoursDays.jsx and scenes/HoursSkies.jsx. The wrapper makes no box of
+   its own, so each piece stacks among the page's own layers. */
+.app > .hours-day { display: contents; }
+.hours-canvas {
   position: fixed;
-  left: 22px;
-  bottom: 18px;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+.hours-canvas.under { z-index: 0; }
+.hours-canvas.over { z-index: 22; }
+
+/* The proclamation: a leaf of vellum unfolding at the head of the page,
+   ruled in gold, a lozenge at each corner. */
+.hours-card {
+  position: fixed;
+  top: 104px;
+  left: 50%;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 340px;
+  max-width: min(560px, 90vw);
+  padding: 16px 26px 16px 18px;
+  color: var(--c-text);
+  background:
+    radial-gradient(ellipse at 30% 0%, rgba(214, 176, 90, 0.1), transparent 70%),
+    linear-gradient(180deg, #1b1820, #121015);
+  border: 1px solid rgb(var(--glow-rgb) / 0.75);
+  outline: 1px solid rgb(var(--glow-rgb) / 0.25);
+  outline-offset: 3px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgb(var(--glow-rgb) / 0.15);
+  cursor: pointer;
+  transform: translateX(-50%);
+  transform-origin: 50% 0;
+  animation: hours-card 7.2s ease both;
+}
+@keyframes hours-card {
+  0% { opacity: 0; clip-path: inset(0 0 100% 0); }
+  9% { opacity: 1; clip-path: inset(0 0 0 0); }
+  88% { opacity: 1; clip-path: inset(0 0 0 0); }
+  100% { opacity: 0; clip-path: inset(0 0 0 0); }
+}
+.hours-card > i {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, #fff0b8, #d6b05a 45%, #8a6420);
+  transform: rotate(45deg);
+}
+.hours-card > i:nth-child(1) { top: -4px; left: -4px; }
+.hours-card > i:nth-child(2) { top: -4px; right: -4px; }
+.hours-card > i:nth-child(3) { bottom: -4px; left: -4px; }
+.hours-card > i:nth-child(4) { bottom: -4px; right: -4px; }
+.hc-mini { flex: none; display: flex; filter: drop-shadow(0 0 10px rgb(var(--glow-rgb) / 0.4)); }
+.hc-words { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hc-latin {
+  font-family: var(--font-meta);
+  font-size: var(--f-sm);
+  font-variant: small-caps;
+  letter-spacing: 0.14em;
+  color: var(--rubric);
+}
+.hc-name {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: transparent;
+  background: linear-gradient(180deg, #fbf0cf 0%, #e2bd62 55%, #a8823a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.hc-line { font-family: var(--font-meta); font-style: italic; color: var(--c-text-dim); }
+
+/* Advent's candles at the corner of the desk, a pool of their light on it. */
+.hours-advent {
+  position: fixed;
+  left: 20px;
+  bottom: 14px;
   z-index: 23;
   pointer-events: none;
-  filter: drop-shadow(0 0 12px rgba(255, 190, 110, 0.35));
+  filter: drop-shadow(0 0 16px rgba(255, 190, 110, 0.4));
 }
-@media (max-width: 1100px) {
-  .app > .hours-advent { display: none; }
+.hours-advent::before {
+  content: "";
+  position: absolute;
+  inset: -60px -80px -20px -40px;
+  z-index: -1;
+  background: radial-gradient(ellipse at 45% 55%, rgba(255, 190, 110, 0.18), transparent 65%);
+}
+
+/* Easter: the eggs, leaning where they were hidden. */
+.hours-egg {
+  position: fixed;
+  z-index: 26;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  transform: rotate(var(--turn));
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+.hours-egg:hover {
+  transform: rotate(var(--turn)) scale(1.18);
+  filter: drop-shadow(0 0 8px rgb(var(--glow-rgb) / 0.7));
+  animation: egg-wobble 0.6s ease-in-out infinite alternate;
+}
+@keyframes egg-wobble {
+  from { rotate: -6deg; }
+  to { rotate: 6deg; }
+}
+.hours-egg svg { display: block; }
+/* All five found: the dove, over the page. */
+.hours-dove {
+  position: fixed;
+  top: 22vh;
+  left: -120px;
+  z-index: 42;
+  pointer-events: none;
+  animation: dove-flight 7s linear forwards;
+}
+@keyframes dove-flight {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(55vw, -6vh); }
+  100% { transform: translate(calc(100vw + 240px), 4vh); opacity: 1; }
+}
+.dove-wing { transform-box: fill-box; transform-origin: 100% 100%; animation: dove-flap 0.5s ease-in-out infinite alternate; }
+.dove-wing.back { animation-delay: -0.08s; }
+@keyframes dove-flap {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(-0.4); }
+}
+
+/* Christmas Eve: the star, its light down the page, the stable in gold. */
+.hours-star { position: fixed; z-index: 0; pointer-events: none; }
+.hours-beam {
+  position: fixed;
+  bottom: 0;
+  z-index: 0;
+  width: 180px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 228, 160, 0.1), rgba(255, 228, 160, 0.025));
+  clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+}
+.hours-stable {
+  position: fixed;
+  bottom: 12px;
+  z-index: 22;
+  width: 150px;
+  height: 96px;
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px rgba(255, 210, 120, 0.45));
+}
+
+/* All Hallows' Eve: the skeleton in the corner, dancing; it waves when you
+   come near. */
+.hours-skeleton {
+  position: fixed;
+  left: 18px;
+  bottom: 10px;
+  z-index: 23;
+  width: 90px;
+  height: 140px;
+  pointer-events: none;
+  filter: drop-shadow(0 0 8px rgba(200, 64, 30, 0.35));
+  animation: sk-sway 2.4s ease-in-out infinite alternate;
+  transform-origin: 50% 100%;
+}
+@keyframes sk-sway {
+  from { transform: rotate(-3deg); }
+  to { transform: rotate(3deg) translateY(-2px); }
+}
+.sk-arm { transform-origin: 56px 40px; transition: transform 0.3s ease; transform: rotate(60deg); }
+.hours-skeleton.waving .sk-arm { animation: sk-wave 0.5s ease-in-out infinite alternate; }
+@keyframes sk-wave {
+  from { transform: rotate(-12deg); }
+  to { transform: rotate(18deg); }
+}
+
+/* St Nicholas: three purses of gold on their heap of coins. */
+.hours-purses {
+  position: fixed;
+  right: 18px;
+  bottom: 8px;
+  z-index: 26;
+  width: 170px;
+  height: 84px;
+  pointer-events: none;
+}
+.purse-heap { position: absolute; left: 0; bottom: 0; width: 170px; height: 40px; filter: drop-shadow(0 0 8px rgb(var(--glow-rgb) / 0.35)); }
+.purse {
+  position: absolute;
+  bottom: 18px;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+  transition: transform 0.2s ease;
+}
+.purse:hover { transform: translateY(-3px) rotate(-3deg); }
+.purse.shaking { animation: purse-shake 0.6s ease; }
+@keyframes purse-shake {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-14deg) translateY(-6px); }
+  45% { transform: rotate(12deg) translateY(-4px); }
+  70% { transform: rotate(-6deg); }
+}
+.purse svg { display: block; }
+
+/* St Valentine's: the lovebirds on the border, a heart rising between them. */
+.hours-lovebirds {
+  position: fixed;
+  z-index: 26;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+}
+.hours-lovebirds svg { display: block; overflow: visible; }
+.lb-heart { transform-box: fill-box; transform-origin: 50% 100%; animation: lb-heart 3.2s ease-in infinite; }
+@keyframes lb-heart {
+  0%, 30% { opacity: 0; transform: translateY(8px) scale(0.6); }
+  45% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-16px) scale(1.1); }
+}
+
+/* Carnival: the fool at the foot of the page, juggling; he ducks when you
+   come near and comes back up when you have gone. */
+.hours-jester {
+  position: fixed;
+  left: 68%;
+  bottom: -6px;
+  z-index: 23;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.5, -0.4, 0.4, 1.4);
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.7));
+}
+.hours-jester.hiding { transform: translateY(85%); }
+.hours-jester svg { display: block; overflow: visible; }
+.jb { animation: juggle 1.5s linear infinite; }
+.jb2 { animation-delay: -0.5s; }
+.jb3 { animation-delay: -1s; }
+@keyframes juggle {
+  0% { transform: translate(-31px, 48px); }
+  25% { transform: translate(-18px, 0); }
+  50% { transform: translate(0, -6px); }
+  75% { transform: translate(18px, 0); }
+  100% { transform: translate(31px, 48px); }
+}
+
+/* The turn of the year: the count in Roman numerals, and the new year. */
+.hours-count,
+.hours-annus {
+  position: fixed;
+  top: 42%;
+  left: 50%;
+  z-index: 50;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.hours-count {
+  font-family: var(--font-display);
+  font-size: 180px;
+  font-weight: 700;
+  line-height: 1;
+  color: transparent;
+  background: linear-gradient(180deg, #fff6d6 0%, #e2bd62 50%, #8a6420 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 30px rgba(255, 200, 100, 0.55)) drop-shadow(0 4px 0 rgba(120, 30, 20, 0.6));
+  animation: hours-tick 1s ease-out both;
+}
+@keyframes hours-tick {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
+  14% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, -50%) scale(0.97); }
+  100% { opacity: 0.2; transform: translate(-50%, -50%) scale(0.92); }
+}
+.hours-annus { display: flex; flex-direction: column; gap: 4px; animation: hours-annus 9s ease both; }
+@keyframes hours-annus {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  10%, 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+.ha-latin { font-family: var(--font-meta); font-size: 28px; font-variant: small-caps; letter-spacing: 0.2em; color: var(--rubric); }
+.ha-year {
+  font-family: var(--font-display);
+  font-size: 120px;
+  font-weight: 700;
+  line-height: 1;
+  color: transparent;
+  background: linear-gradient(180deg, #fff6d6 0%, #e2bd62 50%, #8a6420 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 30px rgba(255, 200, 100, 0.55));
+}
+/* New Year's Day: the old year's leaf turned over as the book opens. */
+.hours-turn {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  perspective: 2200px;
+}
+.ht-leaf {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 75% 70% at 52% 46%, transparent 52%, rgba(0, 0, 0, 0.55) 100%),
+    linear-gradient(180deg, #18151c, #0f0d12);
+  flex-direction: column;
+  gap: 6px;
+  border-right: 2px solid rgb(var(--glow-rgb) / 0.8);
+  transform-origin: 0 50%;
+  animation: ht-turn 3s cubic-bezier(0.5, 0, 0.3, 1) both;
+  backface-visibility: hidden;
+}
+@keyframes ht-turn {
+  0%, 30% { transform: rotateY(0); }
+  100% { transform: rotateY(-100deg); opacity: 0.4; }
+}
+.ht-explicit {
+  font-family: var(--font-meta);
+  font-size: 30px;
+  font-variant: small-caps;
+  letter-spacing: 0.2em;
+  color: var(--rubric);
+}
+.ht-old {
+  font-family: var(--font-display);
+  font-size: 110px;
+  font-weight: 700;
+  color: transparent;
+  background: linear-gradient(180deg, #fbf0cf, #a8823a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  opacity: 0.85;
+}
+
+/* The longest night: the page in the dark, the light carried by the pointer,
+   and the corner candle's own pool of it. */
+@property --lx { syntax: "<length>"; inherits: false; initial-value: 50vw; }
+@property --ly { syntax: "<length>"; inherits: false; initial-value: 50vh; }
+.hours-dark {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  background: rgba(3, 2, 7, 0.62);
+  -webkit-mask: radial-gradient(circle at var(--lx) var(--ly), transparent 90px, #000 360px), radial-gradient(ellipse 30% 40% at 0% 100%, transparent 30%, #000 100%);
+  -webkit-mask-composite: source-in;
+  mask: radial-gradient(circle at var(--lx) var(--ly), transparent 90px, #000 360px), radial-gradient(ellipse 30% 40% at 0% 100%, transparent 30%, #000 100%);
+  mask-composite: intersect;
+  animation: hours-dusk 4s ease both;
+}
+@keyframes hours-dusk { from { opacity: 0; } to { opacity: 1; } }
+.hours-moon {
+  position: fixed;
+  top: 64px;
+  right: 7%;
+  z-index: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 30px rgba(210, 205, 255, 0.45));
+  opacity: 0.9;
+}
+
+/* Midsummer: St John's fire in the corner of the desk. */
+.hours-fire { position: fixed; left: 12px; bottom: 4px; z-index: 23; pointer-events: none; }
+
+/* A birthday: the heralds, sounding in from both top corners, and away. */
+.hours-herald {
+  position: fixed;
+  top: 6px;
+  z-index: 45;
+  width: 330px;
+  height: 150px;
+  pointer-events: none;
+  overflow: visible;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7));
+  animation: herald-left 9.5s cubic-bezier(0.3, 0.9, 0.4, 1) both;
+}
+.hours-herald.left { left: 4px; }
+.hours-herald.right { right: 4px; animation-name: herald-right; }
+@keyframes herald-left {
+  0% { transform: translateX(-110%); }
+  10%, 88% { transform: translateX(0); }
+  100% { transform: translateX(-110%); }
+}
+@keyframes herald-right {
+  0% { transform: translateX(110%); }
+  10%, 88% { transform: translateX(0); }
+  100% { transform: translateX(110%); }
+}
+
+/* The anniversary: the book's seal pressed on the page. */
+.hours-seal {
+  position: fixed;
+  top: 52%;
+  left: 50%;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: seal-press 6.5s ease both;
+}
+@keyframes seal-press {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(2.6) rotate(-14deg); }
+  13% { opacity: 1; transform: translate(-50%, -50%) scale(0.94) rotate(0); }
+  17% { transform: translate(-50%, -50%) scale(1); }
+  85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+.hours-seal svg { filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.7)); }
+.hs-ring {
+  position: absolute;
+  top: 75px;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  border: 2px solid rgb(var(--glow-rgb) / 0.8);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0.6);
+  opacity: 0;
+  animation: seal-ring 1.4s 0.85s ease-out both;
+}
+@keyframes seal-ring {
+  0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.7); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.2); }
+}
+.hs-words {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-style: italic;
+  font-weight: 600;
+  color: transparent;
+  background: linear-gradient(180deg, #fbf0cf 0%, #e2bd62 55%, #a8823a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.8));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hours-card,
+  .hours-dove,
+  .hours-herald,
+  .hours-seal,
+  .hours-skeleton,
+  .hours-skeleton .sk-arm,
+  .jb,
+  .lb-heart,
+  .dove-wing,
+  .hours-count,
+  .hours-annus,
+  .hours-dark { animation: none; }
 }
 
 /* What the snail wears for the day. */
