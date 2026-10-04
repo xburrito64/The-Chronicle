@@ -25,6 +25,19 @@ import { wordsFor } from './themeWords.js'
 import TagIcon, { clampScale } from './TagIcon.jsx'
 
 const pct = (slot) => (slot / SLOTS_PER_DAY) * 100
+
+/**
+ * Whether there is writing right under the pointer — the letters themselves,
+ * not merely the box they sit in, so the space beside a heading still starts
+ * a selection box and the heading's words can still be selected.
+ */
+function overText(x, y) {
+  const node = document.caretRangeFromPoint?.(x, y)?.startContainer
+  if (!node || node.nodeType !== Node.TEXT_NODE || !node.textContent.trim()) return false
+  const whole = document.createRange()
+  whole.selectNodeContents(node)
+  return [...whole.getClientRects()].some((r) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom)
+}
 // How far the pointer may wander and still count as a click. Roughly a slot
 // wide, so that letting go after a small slip opens the note rather than
 // nudging the block ten minutes sideways.
@@ -1051,8 +1064,10 @@ function DayList({
     const trackEl = e.target.closest?.('[data-track-date]')
     if (!trackEl) {
       // Between the bars — a heading, the hours, the gap between days — is
-      // as good a place as any to start a box. The buttons there are not.
-      if (isDay && selects(tool) && !armed && !e.target.closest('button, input, textarea, label, a')) startMarquee(e)
+      // as good a place as any to start a box. The buttons there are not,
+      // and nor is a word: pressing on writing is how to select it.
+      if (isDay && selects(tool) && !armed && !e.target.closest('button, input, textarea, label, a')
+        && !overText(e.clientX, e.clientY)) startMarquee(e)
       return
     }
     const date = trackEl.dataset.trackDate

@@ -11,7 +11,7 @@ import { feastOf } from './hoursFeasts.js'
 // the red egg of Easter, St Nicholas's three gold balls, a heart with its
 // arrow, a fool's cap, the hourglass of the year's last night, Janus looking
 // both ways on the first, the falling tears of St Lawrence, the Twins, a
-// moon with a face, a sun with one, a chaplet of flowers for a birthday and a
+// moon with a face, a sun with one, a herald's trumpet for a birthday and a
 // wax seal for the book's own anniversary — and the ends of its bar
 // made a page of its own (HoursFeastBars.jsx).
 //
@@ -250,23 +250,15 @@ export function FeastMiniature({ id: feast, nth = 1, lit = false, size = 26, pla
       </>
     )
   } else if (feast === 'birthday') {
-    // A chaplet: a crown of leaves with flowers set in it.
+    // A herald's trumpet with its banner, sounding for someone's day.
     art = (
       <>
-        {Array.from({ length: 12 }, (_, i) => {
-          const a = (i / 12) * Math.PI * 2
-          const x = 14 + Math.cos(a) * 8.6
-          const y = 14 + Math.sin(a) * 8.6
-          return (
-            <path key={i} d={LEAF.laurel} fill={MALACHITE} stroke={INK} strokeWidth="0.12"
-              transform={`translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${((a + Math.PI / 2) * 180) / Math.PI + 18}) scale(5.4)`} />
-          )
-        })}
-        {[0, 1, 2, 3, 4].map((i) => {
-          const a = (i / 5) * Math.PI * 2 - Math.PI / 2
-          return <MiniFlower key={i} x={14 + Math.cos(a) * 8.6} y={14 + Math.sin(a) * 8.6} r={2.6} hue={[VERMILION, LAPIS, VELLUM][i % 3]} gold={gold} />
-        })}
-        {lit && <circle cx="14" cy="14" r="2.2" fill={gold} />}
+        <path d="M6.4 9.6 20.4 11.4V20.8L13.4 18.2 6.4 21.4Z" fill={VERMILION} {...line} />
+        <path d="M7.6 11.4 19.2 12.8V19L13.4 16.8 7.6 19.4Z" fill="none" stroke={gold} strokeWidth="0.5" />
+        <path d="M1.6 7.6 22 10.2" stroke={INK} strokeWidth="2.6" strokeLinecap="round" />
+        <path d="M1.6 7.6 22 10.2" stroke={gold} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M21.4 9.4 26.6 6.4Q27.8 10.6 26.6 14.6L21.4 11Z" fill={gold} {...line} />
+        {lit && <g fill="#fff0c0"><circle cx="27.4" cy="3.4" r="0.8" /><circle cx="26" cy="17.4" r="0.7" /></g>}
       </>
     )
   } else if (feast === 'anniversary') {

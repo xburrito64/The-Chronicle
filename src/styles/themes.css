@@ -2011,6 +2011,16 @@
   0%, 100% { opacity: 0.15; }
   50% { opacity: 1; }
 }
+/* Words on a herald's banner, in gold on the red. */
+.feast-banner-words {
+  font-family: var(--font-display);
+  font-weight: 700;
+  fill: #f3dc95;
+  stroke: #3a1206;
+  stroke-width: 0.6px;
+  paint-order: stroke;
+  letter-spacing: 0.06em;
+}
 /* Words on a scroll, in the red of a rubric. */
 .feast-scroll-words {
   font-family: var(--font-display);

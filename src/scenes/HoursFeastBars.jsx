@@ -27,7 +27,8 @@ import { FeastMiniature, Leaf, Bloom, Metals, LEAF, starPoints } from './HoursFe
 //     Geminids        the Twins as stars; silver falling across the bar
 //     Longest night   a single candle kept lit; the moon
 //     Midsummer       St John's fire; the sun; fireflies along the bar
-//     A birthday      chaplets at both ends, and a scroll with the name
+//     A birthday      heralds' trumpets from both ends, their banners
+//                     bearing the years and the name, on cloth of gold
 //     The anniversary a quill and ink; the seal; a scroll with the years
 //
 // Drawn once for the size of the bar; only the flames and the star move.
@@ -111,6 +112,67 @@ function Banderole({ w, h, words }) {
       <path d={`M${x} ${y}Q${x + width / 2} ${y + tall * 0.35} ${x + width} ${y}V${y + tall}Q${x + width / 2} ${y + tall * 1.35} ${x} ${y + tall}Z`} fill={VELLUM} {...inked} />
       <text x={w / 2} y={y + tall * 0.74} textAnchor="middle" className="feast-scroll-words" style={{ fontSize: `${tall * 0.62}px` }}>{words}</text>
     </g>
+  )
+}
+
+/**
+ * A herald's trumpet coming in from the left at the top of the bar, a
+ * swallow-tailed banner hung from it in vermilion fringed with gold, and
+ * gold bursting from its bell. Drawn in the 100-tall box; the words on the
+ * banner are BannerWords, so the right-hand one can be turned without them.
+ */
+function Herald({ id }) {
+  const gold = `url(#${id}g)`
+  const tube = (x) => 12 + (x + 6) * (20 / 160)
+  const fringe = []
+  for (let x = 46; x <= 116; x += 3.5) {
+    const y = x < 81 ? 84 - ((x - 44) / 37) * 12 : 72 + ((x - 81) / 37) * 12
+    fringe.push(<path key={x} d={`M${x} ${y}v4`} stroke="#e2bd62" strokeWidth="1" {...thin} />)
+  }
+  return (
+    <g>
+      {/* The banner, hung from two cords on the tube. */}
+      <path d={`M44 ${tube(44) + 2}L118 ${tube(118) + 2}L118 84L81 72L44 84Z`} fill={VERMILION} {...inked} />
+      <path d={`M48 ${tube(48) + 6}L114 ${tube(114) + 6}L114 79L81 67.6L48 79Z`} fill="none" stroke="#e2bd62" strokeWidth="0.9" {...thin} />
+      <path d={`M44 ${tube(44) + 2}L60 ${tube(60) + 2}L60 79L44 84Z`} fill="#000" opacity="0.14" />
+      {fringe}
+      {[44, 118].map((x) => <circle key={x} cx={x} cy={tube(x) + 1} r="2.6" fill={gold} {...inked} />)}
+      {/* The trumpet: a long gold tube, a knop, and the flared bell. */}
+      <path d={`M-6 12L150 ${tube(150)}`} stroke={INK} strokeWidth="6" strokeLinecap="round" {...thin} />
+      <path d={`M-6 12L150 ${tube(150)}`} stroke={gold} strokeWidth="4.4" strokeLinecap="round" {...thin} />
+      <ellipse cx="34" cy={tube(34)} rx="5" ry="4.4" fill={gold} {...inked} />
+      <ellipse cx="128" cy={tube(128)} rx="3.6" ry="3.4" fill={gold} {...inked} />
+      <path d={`M146 ${tube(146) - 2.2}L170 ${tube(170) - 12}Q175 ${tube(170)} 170 ${tube(170) + 12}L146 ${tube(146) + 2.2}Z`} fill={gold} {...inked} />
+      <ellipse cx="170" cy={tube(170)} rx="3" ry="12" fill="#b08a3e" {...inked} />
+      {/* The fanfare. */}
+      {[[186, 22, 5, 'g'], [198, 38, 3, VERMILION], [184, 50, 4, 'g'], [206, 16, 2.6, LAPIS], [212, 46, 3.4, 'g'], [194, 8, 2.4, VELLUM], [216, 30, 2.2, VERMILION]].map(([x, y, r, c]) => (
+        c === 'g'
+          ? <path key={`${x}${y}`} d={glint(x, y, r)} fill="#fff0c0" />
+          : <circle key={`${x}${y}`} cx={x} cy={y} r={r * 0.6} fill={c} />
+      ))}
+    </g>
+  )
+}
+
+/**
+ * The words on a herald's banner, centred at x. A long name is set a little
+ * smaller and then drawn together to fit, rather than shrunk out of reading.
+ */
+function BannerWords({ x, words }) {
+  const size = Math.min(16, Math.max(11.5, 150 / Math.max(1, words.length)))
+  const tight = words.length * size * 0.62 > 64
+  return (
+    <text
+      x={x}
+      y={52 + size * 0.36}
+      textAnchor="middle"
+      className="feast-banner-words"
+      style={{ fontSize: `${size}px` }}
+      textLength={tight ? 64 : undefined}
+      lengthAdjust={tight ? 'spacingAndGlyphs' : undefined}
+    >
+      {words}
+    </text>
   )
 }
 
@@ -257,13 +319,21 @@ export function FeastGround({ id: feast, w, h }) {
       layers = <rect width={w} height={h} fill={`url(#${id}w)`} />
       break
     case 'birthday':
+      // Crimson cloth of gold: an ogee lattice woven in gold, a pomegranate
+      // in every cell — the hanging behind a feast.
       defs = (
         <>
-          {wash('rgba(214, 176, 90, 0.18)', 'rgba(200, 53, 42, 0.14)')}
-          {pattern('p', 30, 30, <g><circle cx="15" cy="11.6" r="2" fill={VERMILION} /><circle cx="18.4" cy="15" r="2" fill={LAPIS} /><circle cx="15" cy="18.4" r="2" fill={VELLUM} /><circle cx="11.6" cy="15" r="2" fill={LAPIS} /><circle cx="15" cy="15" r="1.2" fill="#e2bd62" /></g>)}
+          {wash('rgba(150, 28, 34, 0.42)', 'rgba(110, 18, 26, 0.26)')}
+          {pattern('p', 44, 56, (
+            <g fill="none" stroke="#e2bd62" strokeWidth="0.8">
+              <path d="M22 0C34 10 34 18 22 28S10 46 22 56M22 0C10 10 10 18 22 28S34 46 22 56" />
+              <path d="M0 23.5c2.4 0 4 1.8 4 4.4S2.4 32.4 0 32.4M44 23.5c-2.4 0-4 1.8-4 4.4s1.6 4.5 4 4.5" fill="#e2bd62" fillOpacity="0.5" />
+              <path d="M22 25l3 3-3 3-3-3Z" fill="#e2bd62" stroke="none" />
+            </g>
+          ))}
         </>
       )
-      layers = <><rect width={w} height={h} fill={`url(#${id}w)`} /><rect width={w} height={h} fill={`url(#${id}p)`} opacity="0.28" /></>
+      layers = <><rect width={w} height={h} fill={`url(#${id}w)`} /><rect width={w} height={h} fill={`url(#${id}p)`} opacity="0.4" /></>
       break
     case 'anniversary':
       defs = <>{wash('rgba(214, 176, 90, 0.26)', 'rgba(214, 176, 90, 0.08)')}{lozenges('rgba(240, 210, 140, 0.4)', 22)}</>
@@ -634,14 +704,18 @@ export function FeastBar({ festival, date, w, h }) {
       break
     }
     case 'birthday': {
-      const words = festival.self
-        ? (festival.age ? `Dies natalis · ${roman(festival.age)}` : 'Dies natalis tuus')
-        : `${festival.person ?? ''}${festival.age ? ` · ${roman(festival.age)}` : ''}`
+      // A fanfare: a herald's trumpet sounding in from each end, a banner
+      // hung from it — the years on one, whose day it is on the other — and
+      // gold bursting from the bells.
+      const age = festival.age ? roman(festival.age) : null
+      const name = festival.self ? 'Dies Natalis' : (festival.person ?? 'Natalis')
+      const left = age ?? (festival.self ? 'Tibi' : 'Natalis')
       art = (
         <>
-          <Banderole w={w} h={h} words={words} />
-          <Left u={u}><g transform="translate(2 2) scale(3.45)"><FeastMiniature id="birthday" size={28} lit /></g></Left>
-          <Right u={u} w={w} width={100}><g transform="translate(2 2) scale(3.45)"><FeastMiniature id="birthday" size={28} lit /></g></Right>
+          <Left u={u}><Herald id={id} /></Left>
+          <Right u={u} w={w} width={220}><g transform="translate(220 0) scale(-1 1)"><Herald id={id} /></g></Right>
+          <Left u={u}><BannerWords x={81} words={left} /></Left>
+          <Right u={u} w={w} width={220}><BannerWords x={139} words={name} /></Right>
         </>
       )
       break
