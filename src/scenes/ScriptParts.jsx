@@ -1,6 +1,11 @@
 import { useId } from 'react'
 import { chronicle, chronicleWords, hourOf } from './manuscript.js'
+import { festivalOf } from './festivals.js'
+import { feastOf } from './hoursFeasts.js'
 import { useMinute } from '../useMinute.js'
+import { useFirstDay } from '../useFirstDay.js'
+import { useBirthdays } from '../useBirthdays.js'
+import { todayISO } from '../time.js'
 
 // The pieces of Black Hours that live inside the page rather than over it:
 // the illuminated initials, the line of chronicle beside each day, and the
@@ -145,8 +150,20 @@ export function Chronicle({ blocks, isToday, nameOf, colourOf }) {
   return <Words parts={chronicleWords(chronicle(blocks), nameOf)} colourOf={colourOf} />
 }
 
-/** "· the hour of Terce", for beside the count of days. */
+/**
+ * "· the hour of Terce", for beside the count of days — and on a feast, what
+ * the feast is, in its own words: "· the tears of St Lawrence are falling".
+ */
 export function HourOf() {
   const minute = useMinute()
-  return <span className="script-hour"> · the hour of <em>{hourOf(minute)}</em></span>
+  const firstDay = useFirstDay()
+  const birthdays = useBirthdays()
+  const festival = festivalOf(todayISO(), firstDay, birthdays)
+  const lines = [festival, ...(festival?.also ?? [])].map(feastOf).filter(Boolean).map((f) => f.line)
+  return (
+    <span className="script-hour">
+      {' · the hour of '}<em>{hourOf(minute)}</em>
+      {lines.map((line) => <span key={line} className="script-feast"> · {line}</span>)}
+    </span>
+  )
 }

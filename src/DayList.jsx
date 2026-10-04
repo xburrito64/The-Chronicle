@@ -13,6 +13,8 @@ import { MagicCircle, Moonweed, RankGem, rankTitle } from './scenes/StarParts.js
 import { monthByTag, isComplete } from './scenes/starlit.js'
 import { festivalOf } from './scenes/festivals.js'
 import { FestiveMark, Spider } from './scenes/Festive.jsx'
+import { FeastHeading, FeastSprigs } from './scenes/HoursFeasts.jsx'
+import { feastOf } from './scenes/hoursFeasts.js'
 import { applyPaint, applyResize, layoutLanes, stripsOf, moveBlocks, clampShift, cutPartner } from './blocks.js'
 import Tools, { selects } from './Tools.jsx'
 import { pieceLook, runeSpans, RUNES_MIN_BAND, PEEK_MAX } from './blockLooks.js'
@@ -1700,7 +1702,9 @@ const DayRow = memo(function DayRow({
   // Christmas Eve, the Sundays of Advent, Halloween, Easter, and
   // whatever festivals follow them.
   // Starlit only, so far.
-  const festival = starlit ? festivalOf(date, firstDay, birthdays) : null
+  // Black Hours keeps the same days as its red-letter days (hoursFeasts.js).
+  const festival = starlit || scriptorium ? festivalOf(date, firstDay, birthdays) : null
+  const feast = scriptorium ? feastOf(festival) : null
   let blocks = groupBlocks ?? (resizing?.date === date
     ? applyResize(day?.blocks ?? [], resizing.id, resizing.startSlot, resizing.endSlot, resizing.at)
     : day?.blocks ?? [])
@@ -1835,7 +1839,9 @@ const DayRow = memo(function DayRow({
     >
       {isToday && theme === 'hearthfire' && !day?.malformed && <Burnt date={date} />}
       {/* Halloween's spider, let down from its web over the bar. */}
-      {festival?.id === 'halloween' && isDay && <Spider className="bar-spider" />}
+      {starlit && festival?.id === 'halloween' && isDay && <Spider className="bar-spider" />}
+      {/* A feast's plant sprigged over the ends of its bar. */}
+      {feast && isDay && !day?.malformed && <FeastSprigs id={feast.id} />}
 
       {/* A line at each hour, on the same whole pixels the blocks use, so a
           line sits exactly under the edge that covers it. */}
@@ -2074,6 +2080,18 @@ ${b.note}` : ''}`}
         {/* Scriptorium opens every day with an illuminated initial,
             coloured by what filled it. */}
         {scriptorium && (() => {
+          // A feast's initial is laid in gold, on the feast's own colours,
+          // whatever was written that day.
+          if (feast) {
+            return (
+              <Initial
+                letter={weekdayOf(date).charAt(0).toUpperCase()}
+                level="gilded"
+                colours={feast.ground}
+                gleam={isToday}
+              />
+            )
+          }
           const lit = illumination(day?.malformed ? [] : day?.blocks)
           return (
             <Initial
@@ -2085,7 +2103,9 @@ ${b.note}` : ''}`}
           )
         })()}
         <span className="dayweekday" data-dow={dayOfWeek(date)}>{weekdayOf(date)}</span>
-        {festival ? (
+        {feast ? (
+          <FeastHeading festival={festival} date={formatDayHeading(date)} lit={isToday} />
+        ) : festival && starlit ? (
           <>
             <span className="festdate">{formatDayHeading(date)}</span>
             {[festival, ...(festival.also ?? [])].map((f) => (

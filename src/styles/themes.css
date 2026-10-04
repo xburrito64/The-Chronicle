@@ -1928,6 +1928,219 @@
   100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + var(--fall))) rotate(var(--turn)); }
 }
 
+/* --- the feasts: red-letter days ------------------------------------------------
+   Which days, and what each is made of: scenes/hoursFeasts.js. The paintings,
+   the sprigs and what crosses the page: scenes/HoursFeasts.jsx. The border's
+   plant on the day: scenes/ScriptScene.jsx. */
+
+/* The date in gold leaf, the name of the feast in the calendar's red, and its
+   English name in gold after it. */
+[data-theme="scriptorium"] .feastdate {
+  color: transparent;
+  background: linear-gradient(180deg, #fbf0cf 0%, #e2bd62 55%, #a8823a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.feast-mini {
+  flex: none;
+  align-self: center;
+  margin: -4px 0;
+  filter: drop-shadow(0 0 4px rgb(var(--glow-rgb) / 0.25));
+}
+.feast-mini.lit { filter: drop-shadow(0 0 7px rgb(var(--glow-rgb) / 0.5)); }
+.feast-seal-years { font: 700 10px var(--font-display); }
+.feastname {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-meta);
+  font-size: var(--f-base);
+  font-weight: 500;
+}
+.feastlatin {
+  color: var(--rubric);
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+}
+.feastplain { color: var(--c-accent); font-style: italic; }
+.feastsep { color: var(--c-text-faint); }
+/* Advent's candles burn, on the day. */
+.feast-flame {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: feast-flame 1.7s steps(14) infinite alternate;
+}
+@keyframes feast-flame {
+  0% { transform: scale(0.9, 0.86) skewX(-4deg); }
+  50% { transform: scale(1.04, 1.06) skewX(3deg); }
+  100% { transform: scale(0.96, 1.1) skewX(-2deg); }
+}
+
+/* The feast's plant over the top corners of its bar, small, and over the
+   blocks without taking their clicks. */
+.feast-sprig {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  width: 60px;
+  height: 32px;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.75));
+}
+.feast-sprig.right { left: auto; right: 0; }
+
+/* In the Overview, a feast's date is written in red, as the calendars did. */
+[data-theme="scriptorium"] .compactrow[data-festival] .gdate {
+  color: var(--rubric);
+  font-weight: 600;
+  text-shadow: none;
+}
+
+/* --- on the day itself ------------------------------------------------------- */
+/* The light of the feast over the vellum. */
+.app > .feast-wash {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+[data-feast="christmas-eve"] .feast-wash { background: radial-gradient(ellipse 70% 55% at 72% -12%, rgba(150, 175, 255, 0.11), transparent 70%); }
+[data-feast="advent"] .feast-wash { background: radial-gradient(ellipse 60% 70% at 0% 100%, rgba(160, 100, 210, 0.08), transparent 70%); }
+[data-feast="halloween"] .feast-wash { background: radial-gradient(ellipse 80% 45% at 50% 108%, rgba(200, 64, 30, 0.1), transparent 70%), radial-gradient(ellipse 70% 70% at 50% 45%, transparent 50%, rgba(0, 0, 0, 0.35)); }
+[data-feast="easter"] .feast-wash { background: linear-gradient(180deg, rgba(255, 196, 150, 0.1), rgba(255, 196, 150, 0.03) 35%, transparent 60%); }
+[data-feast="valentines"] .feast-wash { background: radial-gradient(ellipse 60% 50% at 50% 110%, rgba(220, 80, 110, 0.09), transparent 70%); }
+[data-feast="carnival"] .feast-wash { background: radial-gradient(ellipse 40% 40% at 15% 0%, rgba(63, 99, 200, 0.08), transparent 70%), radial-gradient(ellipse 40% 40% at 85% 0%, rgba(200, 53, 42, 0.08), transparent 70%); }
+:is([data-feast="new-years-eve"], [data-feast="new-year"], [data-feast="birthday"], [data-feast="anniversary"], [data-feast="st-nicholas"]) .feast-wash { background: radial-gradient(ellipse 70% 50% at 50% -10%, rgba(240, 200, 110, 0.09), transparent 70%); }
+:is([data-feast="perseids"], [data-feast="geminids"]) .feast-wash { background: radial-gradient(ellipse 80% 60% at 20% -10%, rgba(120, 140, 220, 0.08), transparent 70%); }
+[data-feast="longest-night"] .feast-wash { background: radial-gradient(ellipse 70% 70% at 50% 45%, transparent 40%, rgba(0, 0, 0, 0.45)); }
+[data-feast="midsummer"] .feast-wash { background: radial-gradient(ellipse 80% 50% at 50% 110%, rgba(110, 200, 150, 0.08), transparent 70%), radial-gradient(ellipse 60% 40% at 50% -10%, rgba(255, 210, 120, 0.06), transparent 70%); }
+/* On All Hallows' Eve the candle gutters; on the longest night it burns low. */
+[data-feast="halloween"] .app > .hours-candle { animation-duration: 2.6s; filter: hue-rotate(-14deg) saturate(1.3); }
+[data-feast="longest-night"] .app > .hours-candle { filter: brightness(0.7); }
+
+/* What crosses the page. Falling things pass over the book; what rises or
+   shines stays behind it, in the margins and between the days. */
+.app > .feast-sky {
+  position: fixed;
+  inset: 0;
+  z-index: 22;
+  overflow: hidden;
+  pointer-events: none;
+}
+.app > .feast-sky:is(.rise, .twinkle) { z-index: 0; }
+.feast-sky i {
+  position: absolute;
+  width: var(--s);
+  height: var(--s);
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.feast-sky.fall i {
+  left: var(--x);
+  top: -24px;
+  opacity: 0.8;
+  animation: feast-fall var(--d) linear var(--delay) infinite;
+}
+@keyframes feast-fall {
+  from { transform: translate3d(0, 0, 0) rotate(0deg); }
+  to { transform: translate3d(var(--drift), calc(100vh + 48px), 0) rotate(var(--turn)); }
+}
+.feast-sky.rise i {
+  left: var(--x);
+  bottom: -24px;
+  animation: feast-rise var(--d) ease-in var(--delay) infinite;
+}
+@keyframes feast-rise {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.7); }
+  12% { opacity: 0.9; }
+  75% { opacity: 0.6; }
+  100% { opacity: 0; transform: translate3d(var(--drift), calc(-100vh - 48px), 0) scale(1); }
+}
+/* A falling star: a streak of gold now and then, gone in a moment. */
+.feast-sky.streak i {
+  left: var(--x);
+  top: calc(var(--y) * 0.6);
+  height: 4px;
+  opacity: 0;
+  animation: feast-streak var(--d) linear var(--delay) infinite;
+}
+@keyframes feast-streak {
+  0% { opacity: 0; transform: rotate(28deg) translateX(-60px); }
+  1.5% { opacity: 1; }
+  7% { opacity: 0; transform: rotate(28deg) translateX(240px); }
+  100% { opacity: 0; transform: rotate(28deg) translateX(240px); }
+}
+/* Bats, crossing the page now and then, beating their wings. */
+.feast-sky.cross i {
+  left: -48px;
+  top: calc(6vh + var(--y) * 0.4);
+  height: calc(var(--s) / 2);
+  animation: feast-cross var(--d) linear var(--delay) infinite, feast-flap 0.42s steps(2) infinite;
+}
+@keyframes feast-cross {
+  0% { translate: 0 0; }
+  35% { translate: 38vw 5vh; }
+  70% { translate: 72vw -2vh; }
+  100% { translate: calc(100vw + 96px) 3vh; }
+}
+@keyframes feast-flap {
+  from { scale: 1 1; }
+  to { scale: 1 0.5; }
+}
+/* Stars pricked in the vellum, coming and going. */
+.feast-sky.twinkle i {
+  left: var(--x);
+  top: var(--y);
+  animation: feast-twinkle var(--d) ease-in-out var(--delay) infinite;
+}
+@keyframes feast-twinkle {
+  0%, 100% { opacity: 0.1; transform: scale(0.6); }
+  50% { opacity: 0.85; transform: scale(1); }
+}
+
+/* Advent's four candles at the corner of the desk, where the light comes
+   from — on a window wide enough to have a corner to spare. */
+.app > .hours-advent {
+  position: fixed;
+  left: 22px;
+  bottom: 18px;
+  z-index: 23;
+  pointer-events: none;
+  filter: drop-shadow(0 0 12px rgba(255, 190, 110, 0.35));
+}
+@media (max-width: 1100px) {
+  .app > .hours-advent { display: none; }
+}
+
+/* What the snail wears for the day. */
+.hours-snail-hat {
+  position: absolute;
+  left: 3px;
+  top: -10px;
+  width: 18px;
+  height: 14px;
+}
+
+/* The leaf that lifts where a stroke ends, on a feast day's bar. */
+.hours-flakes i.feast {
+  background-color: transparent;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  clip-path: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feast-flame,
+  .feast-sky i { animation: none; }
+  .feast-sky:not(.twinkle) { display: none; }
+  .feast-sky.twinkle i { opacity: 0.5; }
+}
+
 /* --- tag boxes, Classic look: illuminated labels ------------------------------ */
 /* Each tag a label written in silver on the black, edged in a hair of gold,
    with its colour laid as a little painted lozenge beside the name. Picked
