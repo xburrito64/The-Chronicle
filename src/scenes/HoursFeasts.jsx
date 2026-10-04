@@ -381,7 +381,7 @@ export function FeastHeading({ festival, date, lit }) {
             {i > 0 && <span className="feastsep"> · </span>}
             <span className="feastlatin">{feast.latin}</span>
             {' '}
-            <span className="feastplain">{f.age != null ? `${f.name} · ${f.age}` : f.name}</span>
+            <span className="feastplain">{f.name}</span>
           </span>
         ))}
       </span>

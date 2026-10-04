@@ -47,8 +47,22 @@ export function birthdayIn(b, year) {
   return { month: b.month, day }
 }
 
-/** "Ada's birthday", or "Your birthday" for your own. */
-const birthdayName = (b) => (b.self ? 'Your birthday' : `${b.name}'s birthday`)
+/** 1st, 2nd, 3rd, 4th … 11th, 12th, 13th … 21st, 22nd. */
+export function ordinal(n) {
+  const tens = n % 100
+  const ones = n % 10
+  if (tens >= 11 && tens <= 13) return `${n}th`
+  return `${n}${ones === 1 ? 'st' : ones === 2 ? 'nd' : ones === 3 ? 'rd' : 'th'}`
+}
+
+/**
+ * "Ada's 26th birthday", or "Your 30th birthday" for your own — and just
+ * "Ada's birthday" when the year she was born isn't known.
+ */
+const birthdayName = (b, age) => {
+  const which = age == null ? 'birthday' : `${ordinal(age)} birthday`
+  return b.self ? `Your ${which}` : `${b.name}'s ${which}`
+}
 
 /**
  * The birthdays falling on this date (YYYY-MM-DD), each as a festival: its
@@ -67,15 +81,18 @@ export function birthdaysOn(date, list) {
       return at.month === month && at.day === day && (b.year == null || b.year < year)
     })
     .sort((a, b) => Number(Boolean(b.self)) - Number(Boolean(a.self)))
-    .map((b) => ({
-      id: 'birthday',
-      key: `birthday-${b.id}`,
-      name: birthdayName(b),
-      person: b.name,
-      self: Boolean(b.self),
-      age: b.year == null ? null : year - b.year,
-      eyebrow: b.self ? 'Your day' : 'A birthday',
-    }))
+    .map((b) => {
+      const age = b.year == null ? null : year - b.year
+      return {
+        id: 'birthday',
+        key: `birthday-${b.id}`,
+        name: birthdayName(b, age),
+        person: b.name,
+        self: Boolean(b.self),
+        age,
+        eyebrow: b.self ? 'Your day' : 'A birthday',
+      }
+    })
 }
 
 /**

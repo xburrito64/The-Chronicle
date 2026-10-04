@@ -1,7 +1,7 @@
 // Birthdays: reading them as they are written, which fall on a day, ages.
 
 import assert from 'node:assert/strict'
-import { parseBirthday, formatBirthday, birthdaysOn, nextBirthday, isBirthDate } from './birthdays.js'
+import { parseBirthday, formatBirthday, birthdaysOn, nextBirthday, isBirthDate, ordinal } from './birthdays.js'
 
 let passed = 0
 let failed = 0
@@ -53,19 +53,25 @@ const list = [
 t('the birthdays on a day, with the age turned', () => {
   const [r] = birthdaysOn('2027-03-05', list)
   assert.equal(r.id, 'birthday')
-  assert.equal(r.name, "Ada's birthday")
+  assert.equal(r.name, "Ada's 26th birthday", 'which birthday, when the year is known')
   assert.equal(r.person, 'Ada')
   assert.equal(r.age, 26)
   assert.equal(r.self, false)
   const [nan] = birthdaysOn('2026-10-14', list)
   assert.equal(nan.age, null, 'no year, no age')
+  assert.equal(nan.name, "Nan's birthday", 'and just her birthday')
   assert.deepEqual(birthdaysOn('2026-10-15', list), [])
+})
+
+t('an age is counted the way it is said', () => {
+  assert.deepEqual([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 52, 101, 111, 112].map(ordinal),
+    ['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '23rd', '52nd', '101st', '111th', '112th'])
 })
 
 t('your own comes first, and is yours', () => {
   const both = birthdaysOn('2026-06-12', list)
   assert.deepEqual(both.map((b) => b.person), ['Me', 'Twin'])
-  assert.equal(both[0].name, 'Your birthday')
+  assert.equal(both[0].name, 'Your 23rd birthday')
   assert.equal(both[0].age, 23)
   assert.equal(both[0].eyebrow, 'Your day')
 })

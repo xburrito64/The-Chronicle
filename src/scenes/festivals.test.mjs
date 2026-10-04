@@ -264,7 +264,7 @@ t('a birthday on a festival leads it: it is someone\'s own day', () => {
   const people = [{ id: 'b-a', name: 'Ada', day: 31, month: 10, year: 2001 }, { id: 'b-me', name: 'Me', day: 1, month: 5, self: true }]
   const f = festivalOf('2027-10-31', null, people)
   assert.equal(f.id, 'birthday')
-  assert.equal(f.name, "Ada's birthday")
+  assert.equal(f.name, "Ada's 26th birthday")
   assert.equal(f.age, 26)
   assert.deepEqual(f.also.map((x) => x.id), ['halloween'])
   assert.equal(festivalOf('2027-05-01', null, people).name, 'Your birthday')

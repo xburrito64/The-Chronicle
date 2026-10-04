@@ -2134,7 +2134,7 @@ ${b.note}` : ''}`}
             ))}
             <span className="festname">
               {[festival, ...(festival.also ?? [])]
-                .map((f) => (f.age != null ? `${f.name} · ${f.age}` : f.name))
+                .map((f) => f.name)
                 .join(' · ')}
             </span>
           </>
