@@ -1978,19 +1978,55 @@
   100% { transform: scale(0.96, 1.1) skewX(-2deg); }
 }
 
-/* The feast's plant over the top corners of its bar, small, and over the
-   blocks without taking their clicks. */
-.feast-sprig {
+/* A feast's bar: the ground of a painting under the blocks, and its margins
+   filled over them (scenes/HoursFeastBars.jsx), framed in gold. */
+.feast-ground,
+.feast-bar {
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 3;
-  width: 60px;
-  height: 32px;
   pointer-events: none;
-  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.75));
+  overflow: visible;
 }
-.feast-sprig.right { left: auto; right: 0; }
+.feast-bar { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7)); }
+[data-theme="scriptorium"] .daysection[data-festival] .track,
+[data-theme="scriptorium"] .compactrow[data-festival] .track {
+  border-color: rgb(var(--glow-rgb) / 0.5);
+  box-shadow: var(--track-well), 0 0 14px rgb(var(--glow-rgb) / 0.12);
+}
+/* Flames move, the star breathes, the fireflies come and go. */
+.feast-flicker {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: feast-flame 1.6s steps(14) infinite alternate;
+}
+.feast-flicker.slow { animation-duration: 2.3s; }
+.feast-pulse { animation: feast-pulse 4s ease-in-out infinite; }
+@keyframes feast-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+.feast-firefly { animation: feast-firefly 3.2s ease-in-out infinite; }
+@keyframes feast-firefly {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 1; }
+}
+/* Words on a scroll, in the red of a rubric. */
+.feast-scroll-words {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  fill: #9e2a22;
+  letter-spacing: 0.04em;
+}
+.feast-roman {
+  font: 700 15px var(--font-display);
+  fill: #e2bd62;
+  stroke: #2a1d08;
+  stroke-width: 0.5px;
+  paint-order: stroke;
+  letter-spacing: 0.03em;
+}
 
 /* In the Overview, a feast's date is written in red, as the calendars did. */
 [data-theme="scriptorium"] .compactrow[data-festival] .gdate {
@@ -2136,6 +2172,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .feast-flame,
+  .feast-flicker,
+  .feast-pulse,
+  .feast-firefly,
   .feast-sky i { animation: none; }
   .feast-sky:not(.twinkle) { display: none; }
   .feast-sky.twinkle i { opacity: 0.5; }

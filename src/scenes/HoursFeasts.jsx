@@ -13,7 +13,7 @@ import { feastOf } from './hoursFeasts.js'
 // both ways on the first, the falling tears of St Lawrence, the Twins, a
 // moon with a face, a sun with one, a chaplet of flowers for a birthday and a
 // wax seal for the book's own anniversary — and the ends of its bar
-// sprigged with the feast's plant: holly, laurel, thorn, lilies, roses.
+// made a page of its own (HoursFeastBars.jsx).
 //
 // On the day itself the border at the head of the page grows that plant
 // (ScriptScene.jsx), and something crosses the page: gold falling like snow,
@@ -40,7 +40,7 @@ export const LEAF = {
 }
 
 /** The points of a star of `n` rays round cx, cy, out to R and in to r. */
-function starPoints(cx, cy, R, r, n, turn = -Math.PI / 2) {
+export function starPoints(cx, cy, R, r, n, turn = -Math.PI / 2) {
   const pts = []
   for (let i = 0; i < n * 2; i++) {
     const a = turn + (i * Math.PI) / n
@@ -51,7 +51,7 @@ function starPoints(cx, cy, R, r, n, turn = -Math.PI / 2) {
 }
 
 /** Burnished gold and polished silver, lit from the upper left. */
-function Metals({ id }) {
+export function Metals({ id }) {
   return (
     <>
       <linearGradient id={`${id}g`} x1="0" y1="0" x2="1" y2="1">
@@ -75,7 +75,7 @@ const Roundel = ({ id, fill }) => (
 )
 
 /** The little painting in the margin beside a feast's date. */
-export function FeastMiniature({ id: feast, nth = 1, lit = false, size = 26 }) {
+export function FeastMiniature({ id: feast, nth = 1, lit = false, size = 26, plain = false }) {
   const id = `m${useId().replace(/:/g, '')}`
   const gold = `url(#${id}g)`
   const silver = `url(#${id}s)`
@@ -86,7 +86,7 @@ export function FeastMiniature({ id: feast, nth = 1, lit = false, size = 26 }) {
     // The star over Bethlehem, its light let down to the stable.
     art = (
       <>
-        <Roundel id={id} fill={LAPIS} />
+        {!plain && <Roundel id={id} fill={LAPIS} />}
         <path d="M12.9 15.2 14 25.6 15.1 15.2Z" fill={gold} opacity="0.85" />
         <polygon points={starPoints(14, 12, 7.2, 2.6, 8)} fill={gold} {...line} />
         <g fill="#fff" opacity="0.8">
@@ -122,7 +122,7 @@ export function FeastMiniature({ id: feast, nth = 1, lit = false, size = 26 }) {
     // A skull, for the Office of the Dead every book of hours carried.
     art = (
       <>
-        <Roundel id={id} fill={VERMILION} />
+        {!plain && <Roundel id={id} fill={VERMILION} />}
         <path d="M14 5.6c-4.6 0-7.4 3.2-7.4 7.2 0 2.5 1.2 4.1 2.6 5v2.6h9.6v-2.6c1.4-.9 2.6-2.5 2.6-5 0-4-2.8-7.2-7.4-7.2Z" fill={VELLUM} {...line} />
         <ellipse cx="11.2" cy="12.6" rx="1.9" ry="2.1" fill={lit ? gold : SABLE} />
         <ellipse cx="16.8" cy="12.6" rx="1.9" ry="2.1" fill={lit ? gold : SABLE} />
@@ -145,7 +145,7 @@ export function FeastMiniature({ id: feast, nth = 1, lit = false, size = 26 }) {
     // His three gold balls: the three purses left at a poor man's window.
     art = (
       <>
-        <Roundel id={id} fill={VERMILION} />
+        {!plain && <Roundel id={id} fill={VERMILION} />}
         {[[14, 8.8], [9.4, 17], [18.6, 17]].map(([x, y]) => (
           <g key={x}>
             <circle cx={x} cy={y} r="3.7" fill={gold} {...line} />
@@ -197,7 +197,7 @@ export function FeastMiniature({ id: feast, nth = 1, lit = false, size = 26 }) {
     // painting every calendar opened January with.
     art = (
       <>
-        <Roundel id={id} fill={LAPIS} />
+        {!plain && <Roundel id={id} fill={LAPIS} />}
         <path d="M14 7.2c3.4 0 5.3 2.1 5.5 4.6l2 2.4-1.8.6c0 2.4-1.2 4.2-3.2 4.8v2.6h-5v-2.6c-2-.6-3.2-2.4-3.2-4.8l-1.8-.6 2-2.4c.2-2.5 2.1-4.6 5.5-4.6Z" fill={VELLUM} {...line} />
         <path d="M14 7.4v12" stroke={INK} strokeOpacity="0.25" strokeWidth="0.6" />
         <circle cx="17.6" cy="12" r="0.75" fill={INK} /><circle cx="10.4" cy="12" r="0.75" fill={INK} />
@@ -231,7 +231,7 @@ export function FeastMiniature({ id: feast, nth = 1, lit = false, size = 26 }) {
     // The moon, with a face, on the darkest night.
     art = (
       <>
-        <Roundel id={id} fill={SABLE} />
+        {!plain && <Roundel id={id} fill={SABLE} />}
         <path d="M16.6 6.4A8 8 0 1 0 16.6 21.6A6.4 6.4 0 1 1 16.6 6.4Z" fill={silver} {...line} />
         <circle cx="10" cy="12.4" r="0.75" fill={INK} />
         <path d="M8.8 16.4q1.2.9 2.5.2" fill="none" stroke={INK} strokeWidth="0.6" strokeLinecap="round" />
@@ -308,7 +308,7 @@ function MiniFlower({ x, y, r, hue, gold }) {
 }
 
 /** One leaf of a border, painted as the feast paints it. */
-function Leaf({ kind, x, y, angle, size, paint, edge, hue, ids }) {
+export function Leaf({ kind, x, y, angle, size, paint, edge, hue, ids }) {
   const fill = paint === null ? `url(#${ids}g)` : paint === 'silver' ? `url(#${ids}s)` : paint === 'motley' ? hue : paint
   const vein = paint === null || paint === 'silver' ? 'rgba(70, 48, 12, 0.6)' : `url(#${ids}g)`
   return (
@@ -320,7 +320,7 @@ function Leaf({ kind, x, y, angle, size, paint, edge, hue, ids }) {
 }
 
 /** What flowers on a border: a flower, berries, a rose, a lily, a star or a bezant. */
-function Bloom({ kind, x, y, r, hue, ids, silver = false }) {
+export function Bloom({ kind, x, y, r, hue, ids, silver = false }) {
   const gold = `url(#${ids}g)`
   const ink = { stroke: INK, strokeWidth: 0.45 }
   if (kind === 'berry') {
@@ -373,47 +373,6 @@ function Bloom({ kind, x, y, r, hue, ids, silver = false }) {
     )
   }
   return <MiniFlower x={x} y={y} r={r} hue={hue} gold={gold} />
-}
-
-// Where the leaves and flowers sit on a sprig: a stem out along the top of
-// the bar from its corner, curling at its end, and a shorter one down the
-// side. [x, y, degrees, size] and [x, y, r].
-const SPRIG_LEAVES = [[9, 3.4, 58, 7], [17.4, 6.4, -46, 7.6], [27, 7.4, 62, 7], [36.6, 4.4, -54, 6.6], [45.6, 6.2, 56, 6], [4.6, 11.6, 24, 6], [3.6, 19.4, 150, 5.4]]
-const SPRIG_BLOOMS = [[47.2, 16.2, 4], [22.8, 15.6, 3.6], [5.4, 25.6, 3]]
-
-/**
- * The feast's plant, sprigged over the two top corners of its bar — the
- * right one the left one turned over. Drawn small, at the very ends of the
- * day, where it costs least to look past.
- */
-export function FeastSprigs({ id: feastId }) {
-  const ids = `s${useId().replace(/:/g, '')}`
-  const feast = feastOf({ id: feastId, nth: 1 })
-  if (!feast) return null
-  const { leaf, paint, edge, bloom, hues } = feast.border
-  const sprig = (
-    <>
-      <path d="M-2 3.2C10 2.4 18 8.8 26 7.8s14-6 22-1c6 3.6 8 9.4 4 12.4-3 2.4-6.4 0-5-2.6M7 3c-2.6 6-4 12-1.4 20.4M21.8 7.6c.6 2.8.8 5 1 7.8" fill="none" stroke={`url(#${ids}g)`} strokeWidth="0.9" strokeLinecap="round" />
-      {SPRIG_LEAVES.map(([x, y, deg, s], i) => (
-        <Leaf key={i} kind={leaf} x={x} y={y} angle={deg} size={s} paint={paint} edge={edge} hue={hues[i % hues.length]} ids={ids} />
-      ))}
-      {SPRIG_BLOOMS.map(([x, y, r], i) => (
-        <Bloom key={i} kind={bloom} x={x} y={y} r={r} hue={hues[i % hues.length]} ids={ids} silver={paint === 'silver'} />
-      ))}
-    </>
-  )
-  return (
-    <>
-      <svg className="feast-sprig" viewBox="0 -4 64 34" aria-hidden="true">
-        <defs><Metals id={ids} /></defs>
-        {sprig}
-      </svg>
-      <svg className="feast-sprig right" viewBox="0 -4 64 34" aria-hidden="true">
-        <defs><Metals id={`${ids}r`} /></defs>
-        <g transform="translate(64 0) scale(-1 1)">{sprig}</g>
-      </svg>
-    </>
-  )
 }
 
 /** The date of a feast, its paintings, and its names in the calendar's red. */

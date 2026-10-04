@@ -13,7 +13,8 @@ import { MagicCircle, Moonweed, RankGem, rankTitle } from './scenes/StarParts.js
 import { monthByTag, isComplete } from './scenes/starlit.js'
 import { festivalOf } from './scenes/festivals.js'
 import { FestiveMark, Spider } from './scenes/Festive.jsx'
-import { FeastHeading, FeastSprigs } from './scenes/HoursFeasts.jsx'
+import { FeastHeading } from './scenes/HoursFeasts.jsx'
+import { FeastGround, FeastBar } from './scenes/HoursFeastBars.jsx'
 import { feastOf } from './scenes/hoursFeasts.js'
 import { applyPaint, applyResize, layoutLanes, stripsOf, moveBlocks, clampShift, cutPartner } from './blocks.js'
 import Tools, { selects } from './Tools.jsx'
@@ -1840,12 +1841,13 @@ const DayRow = memo(function DayRow({
       {isToday && theme === 'hearthfire' && !day?.malformed && <Burnt date={date} />}
       {/* Halloween's spider, let down from its web over the bar. */}
       {starlit && festival?.id === 'halloween' && isDay && <Spider className="bar-spider" />}
-      {/* A feast's plant sprigged over the ends of its bar. */}
-      {feast && isDay && !day?.malformed && <FeastSprigs id={feast.id} />}
 
       {/* A line at each hour, on the same whole pixels the blocks use, so a
           line sits exactly under the edge that covers it. */}
       {!dense && <div className="gridlines" style={{ backgroundImage: gridlines }} />}
+
+      {/* A feast's bar is the ground of a painting, under its blocks. */}
+      {feast && !day?.malformed && <FeastGround id={feast.id} w={trackWidth} h={barHeight} />}
 
       {/* Said out loud rather than left blank — but only in the Day
           view, where there is room for it. In the Overview a row is
@@ -1931,6 +1933,10 @@ ${b.note}` : ''}`}
         })}
       </div>
       )}
+
+      {/* What fills a feast's margins, over the blocks but under their
+          names, so a block at the end of the day can still be read. */}
+      {feast && isDay && !day?.malformed && <FeastBar festival={festival} date={date} w={trackWidth} h={barHeight} />}
 
       {/* Over the blocks, so it can be found against a full day, but
           under the names and grab strips, which you have to be able to
