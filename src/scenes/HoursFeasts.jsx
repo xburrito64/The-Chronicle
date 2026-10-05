@@ -17,8 +17,9 @@ import { feastOf } from './hoursFeasts.js'
 //
 // On the day itself the border at the head of the page grows that plant
 // (ScriptScene.jsx), and something crosses the page: gold falling like snow,
-// embers going up, petals, hearts, coins, motley, bats, the slow streak of a
-// falling star, or stars pricked in the vellum.
+// embers going up, petals, hearts, coins, motley, or stars pricked in the
+// vellum — or, for the feasts with a moving sky of their own, that
+// (HoursSkies.jsx).
 
 const INK = '#2a1d08'
 const LAPIS = '#27458f'
@@ -418,10 +419,6 @@ export function spritesFor(kind, tone = 'gold') {
     case 'hearts':
       return [VERMILION, '#c9718a'].map((c) => svgUrl(
         `<svg ${NS} viewBox='0 0 28 28'>${GOLD_GRAD}<path d='M14 24C8 19.4 4.6 15.6 4.6 11.4c0-2.8 2.1-4.9 4.7-4.9 2 0 3.5 1.1 4.7 2.9 1.2-1.8 2.7-2.9 4.7-2.9 2.6 0 4.7 2.1 4.7 4.9 0 4.2-3.4 8-9.4 12.6Z' fill='${c}' stroke='url(#g)' stroke-width='1.3'/></svg>`))
-    case 'tears':
-      return [svgUrl(`<svg ${NS} viewBox='0 0 100 6' preserveAspectRatio='none'><linearGradient id='t'><stop offset='0' stop-color='${tone === 'silver' ? '#dfe6ff' : '#ffe3a0'}' stop-opacity='0'/><stop offset='.85' stop-color='${tone === 'silver' ? '#eef2ff' : '#ffe9b4'}' stop-opacity='.8'/><stop offset='1' stop-color='#fff'/></linearGradient><path d='M0 3 L96 1.2 A1.8 1.8 0 0 1 96 4.8Z' fill='url(#t)'/></svg>`)]
-    case 'bats':
-      return [svgUrl(`<svg ${NS} viewBox='0 0 40 20'>${GOLD_GRAD}<path d='M20 8c1-2 2.4-2 3-1l.6-1.6.6 1.8C27 4 32 3 39 5c-3 1-4.4 3-4.6 5.6-2-1.4-4.4-1.2-5.6.8-1.4-1.6-3.4-1.4-4.6.2-1.4.9-3 1.6-4.2 3.2-1.2-1.6-2.8-2.3-4.2-3.2-1.2-1.6-3.2-1.8-4.6-.2-1.2-2-3.6-2.2-5.6-.8C5.4 8 4 6 1 5c7-2 12-1 14.2 2.2l.6-1.8.6 1.6c.6-1 2-1 3 1Z' fill='#0c0a0e' stroke='url(#g)' stroke-width='.7' stroke-linejoin='round'/></svg>`)]
     case 'stars':
     default:
       return [
@@ -439,8 +436,6 @@ const SKIES = {
   coins: { motion: 'fall', count: 12, size: [8, 12], dur: [10, 17] },
   embers: { motion: 'rise', count: 22, size: [4, 9], dur: [10, 18] },
   hearts: { motion: 'rise', count: 12, size: [9, 14], dur: [13, 21] },
-  tears: { motion: 'streak', count: 5, size: [70, 130], dur: [9, 17] },
-  bats: { motion: 'cross', count: 3, size: [22, 30], dur: [18, 30] },
   stars: { motion: 'twinkle', count: 32, size: [5, 10], dur: [3, 7] },
 }
 
@@ -465,7 +460,7 @@ export function FeastSky({ kind, tone = 'gold' }) {
           '--d': `${dur.toFixed(1)}s`,
           // Already under way when the page opens, rather than all starting
           // from the top together.
-          '--delay': `${(-Math.random() * dur * (sky.motion === 'streak' ? 3 : 1)).toFixed(1)}s`,
+          '--delay': `${(-Math.random() * dur).toFixed(1)}s`,
           '--drift': `${((Math.random() - 0.5) * 18).toFixed(1)}vw`,
           '--turn': `${Math.round((Math.random() - 0.5) * 720)}deg`,
           backgroundImage: sprites[i % sprites.length],

@@ -49,7 +49,9 @@ export function ordinalWord(n) {
  *            `bloom` for what flowers on it (flower, berry, rose, lily, star,
  *            bezant), and its `hues`; `edge` outlines painted leaves in a
  *            colour other than ink
- *   sky      what falls, rises or shines across the page on the day itself
+ *   sky      what falls, rises or shines across the page on the day itself;
+ *            null for a feast whose day brings a moving sky of its own
+ *            (HoursSkies.jsx: bats, falling stars, fireflies)
  *   line     a few words for the head of the page on the day; a function
  *            where it depends on the festival
  */
@@ -79,7 +81,7 @@ export const FEASTS = {
     ground: [SABLE, VERMILION],
     // Black thorns, edged in red so they show on the black page.
     border: { leaf: 'thorn', paint: SABLE, edge: VERMILION, bloom: 'berry', hues: [VERMILION] },
-    sky: 'bats',
+    sky: null,
     line: 'the Office of the Dead is read tonight',
   },
   easter: {
@@ -129,14 +131,14 @@ export const FEASTS = {
     latin: 'Lacrimae Sancti Laurentii',
     ground: [SABLE, GOLD],
     border: { leaf: 'ivy', paint: null, bloom: 'star', hues: [GOLD] },
-    sky: 'tears',
+    sky: null,
     line: 'the tears of St Lawrence are falling',
   },
   geminids: {
     latin: 'Stellae Geminorum',
     ground: [SABLE, LAPIS],
     border: { leaf: 'ivy', paint: 'silver', bloom: 'star', hues: ['#c9d4f2'] },
-    sky: 'tears',
+    sky: null,
     line: 'the Twins let fall their stars',
   },
   'longest-night': {
@@ -150,7 +152,7 @@ export const FEASTS = {
     latin: 'Solstitium Aestivum',
     ground: [GOLD, MALACHITE],
     border: { leaf: 'ivy', paint: MALACHITE, bloom: 'flower', hues: ['#f0c43a'] },
-    sky: 'embers',
+    sky: null,
     line: "St John's fires burn on the shortest night",
   },
   birthday: {

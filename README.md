@@ -140,6 +140,41 @@ one press:
   reload (it is just two entries in the note), and moves if you drag the edge
   where they meet. Paint back across it and they are one block again.
 
+### Themes
+
+Settings → Look → **Theme** changes the whole look of the app. Tag colours
+stay the same in every one.
+
+- **Starlit**: a grimoire open at night. Logging a stretch casts a spell, and
+  every tag earns a rank from its hours over the past month.
+- **Black Hours**: a book of hours written in gold on black vellum, read by
+  candlelight. Each day opens with an illuminated initial, and the vine at
+  the head of the page is gilded as today fills up.
+- **Hearthfire**, **Tidewater**, **Petalfall** and **Nightshift** each have
+  a scene of their own around the days.
+
+The blocks on the bar have looks of their own too (Classic, Mana crystal,
+Grimoire, Woven), under **Blocks on the bar**.
+
+### Feast days and birthdays
+
+Starlit and Black Hours mark the days of the year that are more than a date:
+Christmas Eve, the Sundays of Advent, Halloween, Easter, St. Nicholas,
+Valentine's Day, Carnival, New Year's Eve and New Year's Day, the Perseids and
+the Geminids, Midsummer and the longest night, everyone's birthdays (from
+Settings → Birthdays), and the anniversary of the first day you logged.
+
+In the list, a feast's day is decorated wherever it is. On the day itself the
+whole page joins in. Black Hours, for example, hides five eggs about the page
+at Easter, counts down to midnight on New Year's Eve in Roman numerals, sends
+bats from the pointer on Halloween, and carries a candle with the pointer on
+the longest night. A birthday says which one it is ("Mum's 52nd birthday")
+when the year someone was born is known.
+
+To see a feast without waiting for it, pick it under Settings → Look → **Try
+a feast day**. Today dresses as that day until the app is closed; nothing is
+saved.
+
 ### Games
 
 A **Game** block can say which game. Open its note and a search box is there

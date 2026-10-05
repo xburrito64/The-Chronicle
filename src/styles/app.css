@@ -292,6 +292,16 @@ h1 {
   font-style: italic;
   color: var(--c-accent);
 }
+/* One tip at a time, each fading in as the last one goes. */
+.tip-turn { animation: tip-in 0.8s ease both; }
+@keyframes tip-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* With the app in the background, a fade would hold at its first frame —
+   unseen — so a tip changing then simply appears. */
+.resting .tip-turn { animation: none; }
+@media (prefers-reduced-motion: reduce) { .tip-turn { animation: none; } }
 .readout-hint {
   font-family: var(--font-meta);
   font-style: italic;

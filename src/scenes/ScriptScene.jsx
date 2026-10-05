@@ -40,9 +40,6 @@ import { useTodaysFestival } from '../feastPreview.js'
 
 // Which ivy grows. Any number will do; this one grows a handsome border.
 const SEED = 11
-// Feasts whose day brings a moving sky of its own (HoursSkies.jsx) in place
-// of the simple one: bats, falling stars, fireflies.
-const SKIES_OF_THEIR_OWN = new Set(['halloween', 'perseids', 'geminids', 'midsummer'])
 // The bird on the hour goes to sleep at Compline and wakes at Prime.
 const NIGHT_FROM = 21 * 60
 const NIGHT_UNTIL = 6 * 60
@@ -322,7 +319,7 @@ export default function ScriptScene({ days }) {
       // On a feast day's bar the leaf that lifts is the feast's: snow-gold on
       // Christmas Eve, hearts on St Valentine's, petals at Easter.
       const onFeast = feastOf({ id: track.closest('[data-festival]')?.dataset.festival, nth: 1 })
-      const sprites = onFeast ? spritesFor(onFeast.sky === 'tears' || onFeast.sky === 'bats' || onFeast.sky === 'embers' ? 'stars' : onFeast.sky) : null
+      const sprites = onFeast ? spritesFor(!onFeast.sky || onFeast.sky === 'embers' ? 'stars' : onFeast.sky) : null
       for (let i = 0; i < 11; i++) {
         const flake = document.createElement('i')
         const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4
@@ -371,7 +368,7 @@ export default function ScriptScene({ days }) {
         </div>
       )}
       {feast && <div className="feast-wash" aria-hidden="true" />}
-      {feast && !stillness() && !SKIES_OF_THEIR_OWN.has(feast.id) && (
+      {feast?.sky && !stillness() && (
         <FeastSky kind={feast.sky} tone={feast.border.paint === 'silver' ? 'silver' : 'gold'} />
       )}
       {festival && <HoursDay festivals={[festival, ...(festival.also ?? [])].filter((f) => feastOf(f))} />}

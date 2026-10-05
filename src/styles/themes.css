@@ -2106,37 +2106,6 @@
   75% { opacity: 0.6; }
   100% { opacity: 0; transform: translate3d(var(--drift), calc(-100vh - 48px), 0) scale(1); }
 }
-/* A falling star: a streak of gold now and then, gone in a moment. */
-.feast-sky.streak i {
-  left: var(--x);
-  top: calc(var(--y) * 0.6);
-  height: 4px;
-  opacity: 0;
-  animation: feast-streak var(--d) linear var(--delay) infinite;
-}
-@keyframes feast-streak {
-  0% { opacity: 0; transform: rotate(28deg) translateX(-60px); }
-  1.5% { opacity: 1; }
-  7% { opacity: 0; transform: rotate(28deg) translateX(240px); }
-  100% { opacity: 0; transform: rotate(28deg) translateX(240px); }
-}
-/* Bats, crossing the page now and then, beating their wings. */
-.feast-sky.cross i {
-  left: -48px;
-  top: calc(6vh + var(--y) * 0.4);
-  height: calc(var(--s) / 2);
-  animation: feast-cross var(--d) linear var(--delay) infinite, feast-flap 0.42s steps(2) infinite;
-}
-@keyframes feast-cross {
-  0% { translate: 0 0; }
-  35% { translate: 38vw 5vh; }
-  70% { translate: 72vw -2vh; }
-  100% { translate: calc(100vw + 96px) 3vh; }
-}
-@keyframes feast-flap {
-  from { scale: 1 1; }
-  to { scale: 1 0.5; }
-}
 /* Stars pricked in the vellum, coming and going. */
 .feast-sky.twinkle i {
   left: var(--x);

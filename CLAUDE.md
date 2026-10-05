@@ -38,6 +38,12 @@ It has to be effortless. If logging a day takes more than about fifteen
 seconds the whole thing stops being used. Prefer fewer clicks to more options,
 and don't add features nobody asked for.
 
+## Designing holidays
+
+Feast days, birthdays and the anniversary are designed per theme, to a high
+standard, and tested running in a separate copy of the app. Before working on
+any of them, read and follow `docs/holiday-design.md`.
+
 ## Layout
 
 ```

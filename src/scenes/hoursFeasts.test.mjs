@@ -16,7 +16,7 @@ t('every festival has a feast in Black Hours, and birthdays and the anniversary 
 t('every feast is whole: a name, a ground, a border, a sky and a line', () => {
   const blooms = ['flower', 'berry', 'rose', 'lily', 'star', 'bezant']
   const leaves = ['ivy', 'holly', 'laurel', 'thorn']
-  const skies = ['snow', 'embers', 'bats', 'petals', 'coins', 'hearts', 'confetti', 'stars', 'tears']
+  const skies = ['snow', 'embers', 'petals', 'coins', 'hearts', 'confetti', 'stars', null]
   for (const id of Object.keys(FEASTS)) {
     const f = feastOf({ id, nth: 2, age: 30, person: 'Sam', self: false })
     assert.ok(f.latin && typeof f.latin === 'string', `${id}: latin`)
@@ -53,7 +53,7 @@ t('years are counted in words', () => {
 
 t('a real festival date comes through to its feast', () => {
   assert.equal(feastOf(festivalOf('2026-12-24')).latin, 'Vigilia Nativitatis')
-  assert.equal(feastOf(festivalOf('2026-10-31')).sky, 'bats')
+  assert.equal(feastOf(festivalOf('2026-10-31')).latin, 'Vigilia Omnium Sanctorum')
   assert.strictEqual(feastOf(festivalOf('2026-10-04')), null)
 })
 
