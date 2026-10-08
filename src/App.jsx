@@ -284,6 +284,18 @@ export default function App() {
     [picked, days],
   )
 
+  // Takes away everything the select tool has gathered up, as one change.
+  const removePicked = useCallback(() => {
+    const byDate = new Map()
+    for (const { date, id } of pickedLive) byDate.set(date, [...(byDate.get(date) ?? []), id])
+    editDays([...byDate].map(([date, ids]) => ({
+      date,
+      update: (prev) => prev.filter((b) => !ids.includes(b.id)),
+    })))
+    setSelected((sel) => (sel && pickedLive.some((p) => p.date === sel.date && p.id === sel.id) ? null : sel))
+    setPicked([])
+  }, [pickedLive, editDays])
+
   // Delete removes the block whose note is open. Same change the button in the
   // note makes, so ctrl+z takes it back the same way. With blocks gathered up
   // by the select tool it takes all of them instead, as one change.
@@ -293,18 +305,11 @@ export default function App() {
       if (e.key !== 'Delete' && e.key !== 'Backspace') return
       if (inSettings(e.target) || inBox(e.target)) return
       e.preventDefault()
-      const byDate = new Map()
-      for (const { date, id } of pickedLive) byDate.set(date, [...(byDate.get(date) ?? []), id])
-      editDays([...byDate].map(([date, ids]) => ({
-        date,
-        update: (prev) => prev.filter((b) => !ids.includes(b.id)),
-      })))
-      setSelected((sel) => (sel && pickedLive.some((p) => p.date === sel.date && p.id === sel.id) ? null : sel))
-      setPicked([])
+      removePicked()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [pickedLive, editDays])
+  }, [pickedLive.length, removePicked])
 
   useEffect(() => {
     if (!selected || pickedLive.length > 0) return
@@ -371,10 +376,14 @@ export default function App() {
   //
   // Whatever the select tool has gathered up goes before the open note: all
   // of it, and how far apart it was.
+  //
+  // Ctrl+X is the same, and then takes what it copied away — one change, so
+  // Ctrl+Z puts it all back.
   useEffect(() => {
     if (!selected && pickedLive.length === 0) return
     const onKey = (e) => {
-      if (e.key !== 'c' && e.key !== 'C') return
+      const key = e.key.toLowerCase()
+      if (key !== 'c' && key !== 'x') return
       if (inSettings(e.target)) return
       if (!e.ctrlKey && !e.metaKey) return
       // Ctrl+C over selected words is the copy everyone means, and stays
@@ -392,10 +401,16 @@ export default function App() {
       // rather than about the words the cursor is still sitting in.
       if (inBox(el)) el.blur()
       setCopied(copy)
+      if (key !== 'x') return
+      if (pickedLive.length > 0) removePicked()
+      else {
+        editDay(selected.date, (prev) => removeBlock(prev, selected.id))
+        setSelected(null)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selected, pickedLive, days])
+  }, [selected, pickedLive, days, removePicked, editDay])
 
   // Ctrl+V puts it down on today, starting at the ten minutes you are in.
   // The same thing again, now: which is what copying a block is for.

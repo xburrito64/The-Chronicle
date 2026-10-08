@@ -994,5 +994,82 @@ t('a pasted group carries on past midnight into the next day', () => {
   assert.deepStrictEqual(days['2026-10-03'].map((x) => [x.startSlot, x.endSlot]), [[6, 18]])
 })
 
+// --- A block steps up or down in two, never through a thin neck ---
+
+/** Every block's top and bottom at one moment, as drawn: { id: [top, bottom] }. */
+const edgesAt = (pieces, slot) => {
+  const here = pieces.filter((p) => p.from <= slot && p.to > slot)
+    .sort((x, y) => x.lane / x.lanes - y.lane / y.lanes)
+  return Object.fromEntries(here.map((p, i) => [p.block.id,
+    [p.lane / p.lanes, here[i + 1] ? here[i + 1].lane / here[i + 1].lanes : 1]]))
+}
+
+/** Whether any block has both edges move the same way at once anywhere. */
+const pinched = (pieces) => {
+  for (let slot = 1; slot < SLOTS_PER_DAY; slot++) {
+    const was = edgesAt(pieces, slot - 1)
+    const now = edgesAt(pieces, slot)
+    for (const id of Object.keys(now)) {
+      if (!was[id]) continue
+      const [a1, a2] = was[id]
+      const [b1, b2] = now[id]
+      if ((b1 < a1 && b2 < a2) || (b1 > a1 && b2 > a2)) return `${id} at slot ${slot}`
+    }
+  }
+  return null
+}
+
+t('when the top block stops, the middle one rises before the bottom one does', () => {
+  // Three thirds become two halves at 12. Youtube takes the top of the bar at
+  // once, and the grey block under it follows ten minutes later — so Youtube
+  // is never squeezed into the sliver where its old third and new half meet.
+  const day = [b('p', 'anime', 0, 12), b('y', 'youtube', 0, 24), b('g', 'game', 0, 24)]
+  assert.deepStrictEqual(seen(day, 'y'), ['0-12 0.3333333333333333..0.6666666666666666',
+    '12-13 0..0.6666666666666666', '13-24 0..0.5'])
+  assert.deepStrictEqual(seen(day, 'g'), ['0-13 0.6666666666666666..1', '13-24 0.5..1'])
+  assert.strictEqual(pinched(layoutLanes(day)), null)
+})
+
+t('when a block arrives on top, the bottom one makes way first', () => {
+  const day = [b('p', 'anime', 12, 24), b('y', 'youtube', 0, 24), b('g', 'game', 0, 24)]
+  assert.deepStrictEqual(seen(day, 'y'), ['0-11 0..0.5', '11-12 0..0.6666666666666666',
+    '12-24 0.3333333333333333..0.6666666666666666'])
+  assert.deepStrictEqual(seen(day, 'g'), ['0-11 0.5..1', '11-24 0.6666666666666666..1'])
+  assert.strictEqual(pinched(layoutLanes(day)), null)
+})
+
+t('a block slipped in between pushes the one under it down without a neck', () => {
+  const day = [b('a', 'anime', 0, 24), b('x', 'walk', 12, 24), b('y', 'youtube', 0, 24), b('g', 'game', 0, 24)]
+  assert.strictEqual(pinched(layoutLanes(day)), null)
+})
+
+t('four deep losing its top steps down the bar without a neck', () => {
+  const day = [b('p', 'anime', 0, 12), b('r', 'reading', 0, 24), b('y', 'youtube', 0, 24), b('g', 'game', 0, 24)]
+  assert.strictEqual(pinched(layoutLanes(day)), null)
+})
+
+t('a ten-minute block on top leaves no neck either side of it', () => {
+  const day = [b('m', 'food', 12, 13), b('y', 'youtube', 0, 24), b('g', 'game', 0, 24)]
+  assert.strictEqual(pinched(layoutLanes(day)), null)
+})
+
+t('the step changes nothing where only one edge moves', () => {
+  // The bottom block of three stopping: the others simply grow into the room
+  // (ten minutes late, as they always did — the shelf after a block).
+  const day = [b('p', 'anime', 0, 24), b('y', 'youtube', 0, 24), b('g', 'game', 0, 12)]
+  assert.deepStrictEqual(shape(layoutLanes(day)),
+    ['g 0-12 2/3', 'p 0-13 0/3', 'p 13-24 0/2', 'y 0-13 1/3', 'y 13-24 1/2'])
+})
+
+t('deeper always stacks over shallower, even counted in different lanes', () => {
+  const day = [b('p', 'anime', 0, 12), b('y', 'youtube', 0, 24), b('g', 'game', 0, 24)]
+  const pieces = layoutLanes(day)
+  for (let slot = 0; slot < 24; slot++) {
+    const here = pieces.filter((p) => p.from <= slot && p.to > slot)
+      .sort((x, y) => x.lane / x.lanes - y.lane / y.lanes)
+    for (let i = 1; i < here.length; i++) assert.ok(here[i].z > here[i - 1].z, `slot ${slot}`)
+  }
+})
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

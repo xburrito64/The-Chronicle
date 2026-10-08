@@ -647,7 +647,7 @@ const DayRow = memo(function DayRow({
                 : `${(piece.top / piece.lanes) * 100}%`,
               bottom: 'var(--block-inset)',
               // How deep the block sits is how it stacks.
-              zIndex: piece.lane,
+              zIndex: piece.z,
               '--tag': tag?.colour ?? '#555',
             }}
             title={`${b.game || b.show || tag?.name || b.tag} · ${slotToTime(b.startSlot)}–${slotToTime(b.endSlot)}${b.note ? `

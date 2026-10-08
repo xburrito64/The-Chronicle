@@ -45,7 +45,7 @@ const DAY_TIPS = [
   'Pick a tag under a day, then drag across its bar to add time',
   'Click a block for its note · drag it to move it · drag an edge to stretch it',
   'Drag on empty space to select blocks · shift-click adds or takes one away',
-  'ctrl+c copies · ctrl+v pastes where you point · ctrl+z undoes',
+  'ctrl+c copies · ctrl+x cuts · ctrl+v pastes where you point · ctrl+z undoes',
   'ctrl+f finds anything you have written · ctrl+scroll makes the rows taller or shorter',
   'V moves and selects · S snips a block in two',
 ]
@@ -1240,7 +1240,7 @@ function DayList({
                     : tool === 'snip'
                       ? 'Click a block to snip it in two at the line · drag the cut with the move tool to shift it · V goes back to moving'
                       : picked?.length
-                        ? `${many(picked.length)} selected, ${formatDuration(pickedSlots)} · drag to move them · delete removes them · ctrl+c copies, ctrl+v puts them where you point · esc lets go`
+                        ? `${many(picked.length)} selected, ${formatDuration(pickedSlots)} · drag to move them · delete removes them · ctrl+c copies, ctrl+x cuts, ctrl+v puts them where you point · esc lets go`
                         : <TakingTurns tips={DAY_TIPS} />}
             </span>
           )}

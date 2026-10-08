@@ -436,6 +436,81 @@ export function setShow(blocks, id, show) {
   return target ? mergeSameTag(named, target, cutsOf(blocks)) : named
 }
 
+/** How far down the bar a piece (or a moment of one) starts, 0 to 1. */
+const depthOf = (at) => at.lane / at.lanes
+
+/**
+ * Where one block is in a moment: its place in it, and how far down the bar
+ * its top and bottom are. Null if it isn't there.
+ */
+function edgesIn(moment, block) {
+  const at = moment.findIndex((m) => m.block === block)
+  if (at < 0) return null
+  const next = moment[at + 1]
+  return { at, top: depthOf(moment[at]), bottom: next ? depthOf(next) : 1 }
+}
+
+/**
+ * A block grows into its new place before it gives up its old one.
+ *
+ * When the bar divides differently from one moment to the next, a block in
+ * the middle can have both its edges move the same way at once. Three things
+ * become two when the top one stops: the middle one rises from the middle
+ * third to the top half, its top and its bottom jumping up together. Drawn,
+ * that is a Z — the old band and the new one only meet in a sliver, and the
+ * block looks pinched to a thin passage right where it steps.
+ *
+ * So the step is taken in two: for ten minutes the block holds both, the
+ * room it is moving into and the room it is leaving, and only then does the
+ * block under it take its share. The block keeps its thickness all the way
+ * round the corner, a staircase rather than a neck. The same in reverse
+ * where something arrives above: the block under it gives way ten minutes
+ * early, the block reaches down into that room first, and then it is pushed
+ * down into it.
+ *
+ * Only ever ten minutes, and only by the block directly underneath keeping
+ * (or taking early) a place it holds anyway the moment next to it — so no
+ * block is ever drawn anywhere it isn't running, and nothing is reordered.
+ * Changed in place.
+ */
+function growBeforeShrinking(moments) {
+  // A step taken in two can leave the moment before it in need of the same,
+  // so this looks again — a few times at most; it settles at once in practice.
+  for (let pass = 0; pass < 4; pass++) {
+    let changed = false
+    for (let slot = 1; slot < moments.length; slot++) {
+      const was = moments[slot - 1]
+      const now = moments[slot]
+      if (!was || !now) continue
+      for (const { block } of now) {
+        const a = edgesIn(was, block)
+        const b = edgesIn(now, block)
+        if (!a || !b) continue
+        if (b.top < a.top && b.bottom < a.bottom) {
+          // Rising: the block underneath stays where it was a moment longer.
+          const under = now[b.at + 1]
+          const kept = was[a.at + 1]
+          if (kept?.block !== under.block) continue
+          const floor = now[b.at + 2] ? depthOf(now[b.at + 2]) : 1
+          if (depthOf(kept) >= floor) continue
+          now[b.at + 1] = kept
+          changed = true
+        } else if (b.top > a.top && b.bottom > a.bottom) {
+          // Sinking: the block underneath makes way a moment early.
+          const under = was[a.at + 1]
+          const early = now[b.at + 1]
+          if (early?.block !== under.block) continue
+          const floor = was[a.at + 2] ? depthOf(was[a.at + 2]) : 1
+          if (depthOf(early) >= floor) continue
+          was[a.at + 1] = early
+          changed = true
+        }
+      }
+    }
+    if (!changed) return
+  }
+}
+
 /**
  * Work out where every block should be drawn once overlaps are allowed.
  *
@@ -478,7 +553,12 @@ export function setShow(blocks, id, show) {
  * With `keepPauses` (a setting, off unless chosen), a ten-minute pause in
  * something above a block is drawn as a gap rather than filled: see below.
  *
- * Returns { block, from, to, lane, lanes, top, index, isFirst, isLast }.
+ * And where a block would have to jump up or down the bar in one go, it
+ * takes the step in two: see growBeforeShrinking.
+ *
+ * Returns { block, from, to, lane, lanes, top, z, index, isFirst, isLast }.
+ * A piece starts `lane / lanes` of the way down the bar; `z` is how deep it
+ * stacks, deeper over shallower.
  */
 export function layoutLanes(blocks, { keepPauses = false } = {}) {
   if (blocks.length === 0) return []
@@ -496,13 +576,17 @@ export function layoutLanes(blocks, { keepPauses = false } = {}) {
     return at < 0 ? -1 : at / running[slot].length
   }
 
-  const pieces = []
-  const open = new Map() // block -> the run being extended
+  // Each ten minutes as it is drawn: what is there, top to bottom, and the
+  // lane each of them starts in. Worked out moment by moment first, then
+  // smoothed where one moment meets the next (see below), then cut into
+  // pieces.
+  const moments = []
   for (let slot = 0; slot < SLOTS_PER_DAY; slot++) {
     const from = slot
     const to = slot + 1
     const here = running[slot]
     if (here.length === 0) continue
+    const before = moments[slot - 1]
 
     // Left alone, a block rises into any room above it, ten minutes of it
     // included: the bar is always filled. Some would rather a ten-minute pause
@@ -511,12 +595,12 @@ export function layoutLanes(blocks, { keepPauses = false } = {}) {
     // keepPauses, where every block here is drawn the same just before and
     // just after, and the slot between is the only one that differs, they
     // keep the place they had and the pause shows as the gap it was.
-    const bridged = keepPauses && here.every((b) => {
+    const bridged = keepPauses && before && here.every((b) => {
       const share = shareAt(b, slot - 1)
-      return share >= 0 && share === shareAt(b, slot + 1) && open.get(b)?.to === from
+      return share >= 0 && share === shareAt(b, slot + 1)
     }) && here.some((b) => shareAt(b, slot) !== shareAt(b, slot - 1))
     if (bridged) {
-      for (const block of here) open.get(block).to = to
+      moments[slot] = before.filter((at) => here.includes(at.block))
       continue
     }
 
@@ -566,21 +650,33 @@ export function layoutLanes(blocks, { keepPauses = false } = {}) {
     const same = here.every((b) => held.indexOf(b) * here.length === here.indexOf(b) * held.length)
     const claiming = same ? here : held
     const lanes = claiming.length
+    moments[slot] = here.map((block) => ({ block, lane: claiming.indexOf(block), lanes }))
+  }
 
-    here.forEach((block) => {
-      const lane = claiming.indexOf(block)
+  growBeforeShrinking(moments)
+
+  const pieces = []
+  const open = new Map() // block -> the run being extended
+  for (let slot = 0; slot < SLOTS_PER_DAY; slot++) {
+    for (const { block, lane, lanes } of moments[slot] ?? []) {
       const last = open.get(block)
       // One rectangle per run at the same height, so a block is only cut
       // where the number of things beside it really changes.
-      if (last && last.to === from && last.lane === lane && last.lanes === lanes) {
-        last.to = to
-        return
+      if (last && last.to === slot && last.lane === lane && last.lanes === lanes) {
+        last.to = slot + 1
+        continue
       }
-      const piece = { block, from, to, lane, lanes, top: lane }
+      const piece = { block, from: slot, to: slot + 1, lane, lanes, top: lane }
       open.set(block, piece)
       pieces.push(piece)
-    })
+    }
   }
+
+  // How deep each piece sits, as a plain order to stack by. Its lane alone
+  // won't do: next to a step (see growBeforeShrinking) one block can be
+  // counted in halves while the one under it is still counted in thirds.
+  const depths = [...new Set(pieces.map(depthOf))].sort((a, b) => a - b)
+  for (const piece of pieces) piece.z = depths.indexOf(depthOf(piece))
 
   for (const block of blocks) {
     const mine = pieces.filter((p) => p.block === block)
@@ -635,10 +731,9 @@ export function stripsOf(mine, pieces) {
     const piece = mine.find((p) => p.from <= from && p.to >= to)
     if (!piece) continue
     // A strip lies inside one cut, so anything over it covers all of it.
-    const under = over.filter((p) => p.lane > piece.lane && p.from <= from && p.to >= to)
-    const floor = under.length > 0 ? Math.min(...under.map((p) => p.lane)) : piece.lanes
-    const top = piece.lane / piece.lanes
-    const bottom = floor / piece.lanes
+    const top = depthOf(piece)
+    const under = over.filter((p) => depthOf(p) > top && p.from <= from && p.to >= to)
+    const bottom = under.length > 0 ? Math.min(...under.map(depthOf)) : 1
     const last = strips[strips.length - 1]
     if (last && last.to === from && last.top === top && last.bottom === bottom) last.to = to
     else strips.push({ from, to, top, bottom })

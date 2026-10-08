@@ -131,8 +131,9 @@ one press:
   worked: click it for its note, drag it to move it, drag an edge to stretch
   it. Anywhere else, drag a box over blocks, across as many days as it reaches
   (shift-click adds or removes one). Then drag any of them to move them all,
-  press Delete to remove them, or ctrl+c and ctrl+v to copy them to wherever
-  the pointer is.
+  press Delete to remove them, or ctrl+c (or ctrl+x to cut) and ctrl+v to
+  copy them to wherever the pointer is. Ctrl+x works on an open note's block
+  too.
 - **Snip** (`S` or `2`) — click a block to cut it in two where the line is.
   An hour of anime cut at the half hour is two half hours of the same show,
   side by side, and each can say its own episodes. Two of the same thing that
