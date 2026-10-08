@@ -658,10 +658,6 @@ ${b.note}` : ''}`}
       </div>
       )}
 
-      {/* What fills a feast's margins, over the blocks but under their
-          names, so a block at the end of the day can still be read. */}
-      {feast && isDay && !day?.malformed && <FeastBar festival={festival} date={date} w={trackWidth} h={barHeight} />}
-
       {/* Over the blocks, so it can be found against a full day, but
           under the names and grab strips, which you have to be able to
           read and grab through it. */}
@@ -692,6 +688,11 @@ ${b.note}` : ''}`}
           </span>
         )
       })}
+
+      {/* What fills a feast's margins, over the blocks and their names and
+          pictures alike: it is painted on the page over the whole day. It
+          lets every click through, and the grab strips stay above it. */}
+      {feast && isDay && !day?.malformed && <FeastBar festival={festival} date={date} w={trackWidth} h={barHeight} />}
 
       {/* Handles are drawn over the blocks so they are never buried,
           but only as tall as the block itself — a full-height strip

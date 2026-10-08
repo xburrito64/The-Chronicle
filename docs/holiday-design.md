@@ -48,7 +48,10 @@ recognisably that holiday at a glance.
   - a **ground** under the blocks, showing through wherever the day is empty
     (a pattern, a wash of colour, a starfield) — different for each holiday;
   - **large pieces at the ends** of the bar, the full height of it, over the
-    blocks but under their names, so names stay readable;
+    blocks *and* their names, covers and icons — the owner wants the
+    painting in front of everything on the bar (only the grab strips stay
+    above it). So leave room: keep the pieces to the ends and edges, and
+    let the middle of the bar, where names usually sit, show through;
   - on holidays where it suits, something **across the whole bar** (rays,
     streaks of falling stars, flags, a scroll with a name).
 - **The Overview row** (a few pixels tall): at least a coloured date and a
@@ -123,7 +126,8 @@ without waiting a year.
 
 - Get in the way of logging. It is one day a year, but the app is used all
   that day. Decorations let clicks through (`pointer-events: none`) unless
-  they are something to press. Block names stay readable. Big overlays
+  they are something to press. Bar pieces sit in front of block names, so
+  keep them to the ends and edges and leave most names clear. Big overlays
   (greetings, fanfares, seals) go away by themselves within a few seconds.
 - Change how the app behaves. Holidays change how it looks, never what it
   does (the owner's standing rule: "fix how it looks, not what it does").
