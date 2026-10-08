@@ -450,6 +450,50 @@ function edgesIn(moment, block) {
   return { at, top: depthOf(moment[at]), bottom: next ? depthOf(next) : 1 }
 }
 
+/** A place `depth` of the way down the bar, as a lane of the fewest lanes that says it. */
+function laneAt(block, depth) {
+  for (let lanes = 1; lanes <= 96; lanes++) {
+    const lane = Math.round(depth * lanes)
+    if (Math.abs(lane - depth * lanes) < 1e-9) return { block, lane, lanes }
+  }
+  return { block, lane: Math.round(depth * 960), lanes: 960 }
+}
+
+/**
+ * Whether two bands of one block meet in less than half the thinner of them:
+ * drawn one after the other, a passage that narrow reads as a pinch.
+ */
+const pinches = (a, b) =>
+  Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) < Math.min(a.bottom - a.top, b.bottom - b.top) / 2 - 1e-9
+
+/** Both edges of a block moving the same way between two bands: a Z. */
+const zed = (a, b) => (b.top < a.top && b.bottom < a.bottom) || (b.top > a.top && b.bottom > a.bottom)
+
+/** The same band of the bar, both edges. */
+const sameBand = (x, y) => !!x && !!y && x.top === y.top && x.bottom === y.bottom
+
+/**
+ * Move the edge under the `i`th block of a moment to `depth`, by moving the
+ * top of whatever is under it. Only if every block there keeps some room.
+ */
+function setBottom(moment, i, depth) {
+  const under = moment[i + 1]
+  if (!under || depth === depthOf(under)) return false
+  const floor = moment[i + 2] ? depthOf(moment[i + 2]) : 1
+  if (depth <= depthOf(moment[i]) || depth >= floor) return false
+  moment[i + 1] = laneAt(under.block, depth)
+  return true
+}
+
+/** Move the top of the `i`th block of a moment to `depth`; never the topmost. */
+function setTop(moment, i, depth) {
+  if (i === 0 || depth === depthOf(moment[i])) return false
+  const bottom = moment[i + 1] ? depthOf(moment[i + 1]) : 1
+  if (depth <= depthOf(moment[i - 1]) || depth >= bottom) return false
+  moment[i] = laneAt(moment[i].block, depth)
+  return true
+}
+
 /**
  * A block grows into its new place before it gives up its old one.
  *
@@ -468,10 +512,23 @@ function edgesIn(moment, block) {
  * early, the block reaches down into that room first, and then it is pushed
  * down into it.
  *
- * Only ever ten minutes, and only by the block directly underneath keeping
- * (or taking early) a place it holds anyway the moment next to it — so no
- * block is ever drawn anywhere it isn't running, and nothing is reordered.
- * Changed in place.
+ * That needs the block underneath to be there on both sides of the step.
+ * Where it is the one ending (or starting) there, it can't keep the place
+ * for the block above, so it gives up half of it instead, for its last (or
+ * first) ten minutes: the block grows down into that half, and the step
+ * becomes a staircase of two smaller ones.
+ *
+ * The same pinch can also take two moments: a block in the top half, the
+ * block under it stopping, ten minutes with the bar to itself, then
+ * something arriving on top and pushing it into the bottom half. The ten
+ * minutes in between are a column the full height of the bar, and the only
+ * way from the top half to the bottom one — a passage ten minutes wide. So
+ * either side of the column the neighbours give up half their room for ten
+ * minutes, and the column becomes the middle of a staircase.
+ *
+ * Only ever ten minutes, and only by a neighbour standing aside — so no block
+ * is ever drawn anywhere it isn't running, and nothing is reordered. Changed
+ * in place.
  */
 function growBeforeShrinking(moments) {
   // A step taken in two can leave the moment before it in need of the same,
@@ -490,20 +547,58 @@ function growBeforeShrinking(moments) {
           // Rising: the block underneath stays where it was a moment longer.
           const under = now[b.at + 1]
           const kept = was[a.at + 1]
-          if (kept?.block !== under.block) continue
           const floor = now[b.at + 2] ? depthOf(now[b.at + 2]) : 1
-          if (depthOf(kept) >= floor) continue
-          now[b.at + 1] = kept
-          changed = true
+          if (kept?.block === under.block && depthOf(kept) < floor) {
+            now[b.at + 1] = kept
+            changed = true
+          } else if (pinches(a, b)) {
+            // It can't: it has only just arrived. It starts in the lower
+            // half of its room instead.
+            changed = setBottom(now, b.at, (b.bottom + Math.min(a.bottom, floor)) / 2) || changed
+          }
         } else if (b.top > a.top && b.bottom > a.bottom) {
           // Sinking: the block underneath makes way a moment early.
           const under = was[a.at + 1]
           const early = now[b.at + 1]
-          if (early?.block !== under.block) continue
           const floor = was[a.at + 2] ? depthOf(was[a.at + 2]) : 1
-          if (depthOf(early) >= floor) continue
-          was[a.at + 1] = early
-          changed = true
+          if (early?.block === under.block && depthOf(early) < floor) {
+            was[a.at + 1] = early
+            changed = true
+          } else if (pinches(a, b)) {
+            // It can't: it is on its way out. It ends in the lower half of
+            // its room instead.
+            changed = setBottom(was, a.at, (a.bottom + Math.min(b.bottom, floor)) / 2) || changed
+          }
+        }
+      }
+    }
+
+    // The column: a block with the bar to itself for ten or twenty minutes,
+    // between a band before it and a band after it that barely meet.
+    for (let slot = 1; slot < moments.length; slot++) {
+      const was = moments[slot - 1]
+      const now = moments[slot]
+      if (!was || !now) continue
+      for (const { block } of now) {
+        const a = edgesIn(was, block)
+        const b = edgesIn(now, block)
+        if (!a || !b || b.top > a.top || b.bottom < a.bottom) continue
+        let end = slot + 1
+        while (end < slot + 3 && moments[end] && sameBand(edgesIn(moments[end], block), b)) end++
+        const next = moments[end]
+        const c = next && edgesIn(next, block)
+        if (!c || end - slot > 2 || b.top > c.top || b.bottom < c.bottom) continue
+        if (!zed(a, c) || !pinches(a, c)) continue
+        if (c.top > a.top) {
+          // From high to low: the one under it ends lower, the one over it
+          // starts thinner.
+          changed = setBottom(was, a.at, (a.bottom + b.bottom) / 2) || changed
+          changed = setTop(next, c.at, (b.top + c.top) / 2) || changed
+        } else {
+          // From low to high: the one over it ends thinner, the one under it
+          // starts lower.
+          changed = setTop(was, a.at, (a.top + b.top) / 2) || changed
+          changed = setBottom(next, c.at, (c.bottom + b.bottom) / 2) || changed
         }
       }
     }

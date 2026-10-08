@@ -1006,14 +1006,19 @@ const edgesAt = (pieces, slot) => {
 
 /** Whether any block has both edges move the same way at once anywhere. */
 const pinched = (pieces) => {
+  // Two bands of a block that meet in less than half the thinner one, either
+  // side by side or with ten minutes of the whole bar between them.
+  const thin = ([a1, a2], [b1, b2]) => ((b1 < a1 && b2 < a2) || (b1 > a1 && b2 > a2))
+    && Math.min(a2, b2) - Math.max(a1, b1) < Math.min(a2 - a1, b2 - b1) / 2 - 1e-9
   for (let slot = 1; slot < SLOTS_PER_DAY; slot++) {
     const was = edgesAt(pieces, slot - 1)
     const now = edgesAt(pieces, slot)
+    const next = edgesAt(pieces, slot + 1)
     for (const id of Object.keys(now)) {
       if (!was[id]) continue
-      const [a1, a2] = was[id]
-      const [b1, b2] = now[id]
-      if ((b1 < a1 && b2 < a2) || (b1 > a1 && b2 > a2)) return `${id} at slot ${slot}`
+      if (thin(was[id], now[id])) return `${id} at slot ${slot}`
+      const column = now[id][0] === 0 && now[id][1] === 1
+      if (column && next[id] && thin(was[id], next[id])) return `${id} round slot ${slot}`
     }
   }
   return null
@@ -1051,6 +1056,34 @@ t('four deep losing its top steps down the bar without a neck', () => {
 t('a ten-minute block on top leaves no neck either side of it', () => {
   const day = [b('m', 'food', 12, 13), b('y', 'youtube', 0, 24), b('g', 'game', 0, 24)]
   assert.strictEqual(pinched(layoutLanes(day)), null)
+})
+
+t('the block under it ending as one arrives on top makes a staircase, not a neck', () => {
+  // DGG in the top half, the grey under it stops, and something arrives on
+  // top: DGG has to end up in the bottom half. Grey gives up half its room
+  // for its last ten minutes, and the new block takes only part of its room
+  // for its first ten, so DGG goes down in steps.
+  const same = [b('p', 'anime', 12, 24), b('d', 'dgg', 0, 24), b('g', 'game', 0, 12)]
+  assert.deepStrictEqual(seen(same, 'd'), ['0-11 0..0.5', '11-12 0..0.75',
+    '12-13 0.3333333333333333..1', '13-24 0.5..1'])
+  assert.strictEqual(pinched(layoutLanes(same)), null)
+})
+
+t('ten minutes alone between the two is a step in the middle, not a column', () => {
+  const later = [b('p', 'anime', 13, 24), b('d', 'dgg', 0, 24), b('g', 'game', 0, 12)]
+  assert.deepStrictEqual(seen(later, 'd'), ['0-11 0..0.5', '11-12 0..0.75', '12-13 0..1',
+    '13-14 0.25..1', '14-24 0.5..1'])
+  assert.deepStrictEqual(seen(later, 'g'), ['0-11 0.5..1', '11-12 0.75..1'])
+  assert.deepStrictEqual(seen(later, 'p'), ['13-14 0..0.25', '14-24 0..0.5'])
+  assert.strictEqual(pinched(layoutLanes(later)), null)
+  // And the other way round, climbing.
+  const up = [b('p', 'anime', 0, 12), b('d', 'dgg', 0, 24), b('g', 'game', 13, 24)]
+  assert.strictEqual(pinched(layoutLanes(up)), null)
+})
+
+t('half an hour alone in between is left as it is', () => {
+  const day = [b('p', 'anime', 15, 24), b('d', 'dgg', 0, 24), b('g', 'game', 0, 12)]
+  assert.deepStrictEqual(seen(day, 'd'), ['0-12 0..0.5', '12-15 0..1', '15-24 0.5..1'])
 })
 
 t('the step changes nothing where only one edge moves', () => {
