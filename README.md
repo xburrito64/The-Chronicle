@@ -20,7 +20,7 @@ app says so and refuses to write over it.
 
 ## Installing
 
-Download `The Chronicle Setup <version>.exe` from the
+Download `The-Chronicle-Setup-<version>.exe` from the
 [Releases](https://github.com/xburrito64/The-Chronicle/releases) page and run
 it. Windows only.
 
@@ -32,6 +32,23 @@ On first start, open the settings (the gear at the top right) and go to
 RAWG and SteamGridDB keys there are optional and only fetch game covers;
 everything else works without them. It comes with a starter set of tags you can
 rename, recolour, hide or add to under **Tags**.
+
+### Updates
+
+From 0.3.0 on, the app updates itself. Once when it starts it asks GitHub
+whether a newer version is out — one request for a version number, with
+nothing about you or your days in it. If there is one, a banner under the
+title says so, with what is new, **Install** and **Not now**. Install
+downloads it in the background; **Restart** closes the app, installs the new
+version quietly and opens it again, about half a minute later. Your notes,
+settings, tags, keys and icons are left exactly as they are.
+
+A new version can bring new tags and icons too. They are added to what you
+already have — never over anything you changed — and a new tag is offered
+once: delete it and it stays deleted.
+
+What the updater did is written to `updater.log` in the settings folder, on
+this machine only.
 
 ## Running it
 

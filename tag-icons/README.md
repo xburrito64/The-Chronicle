@@ -18,8 +18,8 @@ Not its display name. Ids are lowercase and use hyphens:
 Current ids, ready to copy:
 
 ```
-sleep  bed  game  shower  reading  walk  anime  youtube
-music  food  cleaning  documenting  research  planning  anything-else
+sleep  bed  game  shower  reading  walk  anime  series  movie
+youtube  music  food  cleaning  documenting  research  planning  anything-else
 ```
 
 A tag you add yourself in the settings gets an id from its name; the tag

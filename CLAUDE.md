@@ -25,7 +25,10 @@ it that way.
 **No accounts, no cloud, no telemetry.** The only things that leave the
 machine are the cover and metadata lookups (RAWG, Steam, SteamGridDB,
 AniList, TMDB), and a single button that sends anime progress to AniList. Nothing is
-ever sent without a press.
+ever sent without a press. The one exception, agreed by the owner: once at
+start the installed app asks GitHub whether a newer version is out — a version
+number, nothing about the person or their days. Downloading and installing it
+are still presses.
 
 **Secrets live in `config.json`, which is gitignored.** It holds API keys and
 an AniList token that is effectively a password to someone's account. Never
