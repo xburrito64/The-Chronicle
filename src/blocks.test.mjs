@@ -1,7 +1,7 @@
 import assert from 'node:assert'
 import {
   applyPaint, applyResize, layoutLanes, stripsOf, overlapCluster, pasteAt, serialise, deserialise, setGame, setShow,
-  snipBlock, cutsOf, cutPartner, moveBlocks, pasteBlocks,
+  snipBlock, cutsOf, cutPartner, moveBlocks, pasteBlocks, setSeries, setFilm,
 } from './blocks.js'
 import { paintSpans, SLOTS_PER_DAY } from './time.js'
 
@@ -870,7 +870,7 @@ t('two halves survive a save and reload, and stay two', () => {
   const day = snipBlock([b('w', 'anime', 120, 126)], 'w', 123)
   const back = deserialise(serialise(day))
   assert.equal(back.length, 2)
-  assert.deepStrictEqual([...cutsOf(back)], ['anime||@123'])
+  assert.deepStrictEqual([...cutsOf(back)], ['anime||||@123'])
 })
 
 t('dragging the outer edge of one half leaves the cut where it is', () => {
@@ -1102,6 +1102,45 @@ t('deeper always stacks over shallower, even counted in different lanes', () => 
       .sort((x, y) => x.lane / x.lanes - y.lane / y.lanes)
     for (let i = 1; i < here.length; i++) assert.ok(here[i].z > here[i - 1].z, `slot ${slot}`)
   }
+})
+
+// --- Series and films ---
+
+t('naming a series says the show, the season and the episodes', () => {
+  const out = setSeries([b('s', 'series', 0, 6)], 's', { name: 'South Park', cover: 'sp.jpg', season: 27, episodes: [4, 3] })
+  assert.deepStrictEqual([out[0].show, out[0].season, out[0].episodes, out[0].cover], ['South Park', 27, [3, 4], 'sp.jpg'])
+})
+
+t('two evenings of the same season fold together', () => {
+  let day = [b('a', 'series', 0, 6), b('c', 'series', 6, 12)]
+  day = setSeries(day, 'a', { name: 'South Park', season: 27, episodes: [1] })
+  day = setSeries(day, 'c', { name: 'South Park', season: 27, episodes: [2] })
+  assert.equal(day.length, 1)
+  assert.deepStrictEqual(day[0].episodes, [1, 2])
+})
+
+t('two seasons of one show side by side stay two', () => {
+  let day = [b('a', 'series', 0, 6), b('c', 'series', 6, 12)]
+  day = setSeries(day, 'a', { name: 'South Park', season: 26, episodes: [6] })
+  day = setSeries(day, 'c', { name: 'South Park', season: 27, episodes: [1] })
+  assert.equal(day.length, 2)
+})
+
+t('a season and a film survive a save and reload', () => {
+  let day = setSeries([b('a', 'series', 0, 6)], 'a', { name: 'South Park', season: 27, episodes: [3], cover: 'sp.jpg' })
+  day = [...day, ...setFilm([b('f', 'movie', 12, 26)], 'f', { name: 'Dune: Part Two', cover: 'd.jpg' })]
+  const saved = serialise(day)
+  assert.deepStrictEqual(saved, [
+    { tag: 'series', start: '00:00', end: '01:00', show: 'South Park', season: 27, episodes: [3], cover: 'sp.jpg' },
+    { tag: 'movie', start: '02:00', end: '04:20', film: 'Dune: Part Two', cover: 'd.jpg' },
+  ])
+  const back = deserialise(saved)
+  assert.deepStrictEqual([back[0].season, back[1].film], [27, 'Dune: Part Two'])
+})
+
+t('taking a series back off clears the season too', () => {
+  const day = setSeries(setSeries([b('a', 'series', 0, 6)], 'a', { name: 'X', season: 2, episodes: [1] }), 'a', null)
+  assert.deepStrictEqual([day[0].show, day[0].season, day[0].episodes], ['', null, []])
 })
 
 console.log(`\n${pass} passed, ${fail} failed`)

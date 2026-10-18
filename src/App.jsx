@@ -19,13 +19,15 @@ import { branchDays } from './scenes/petals.js'
 import { wordsFor } from './themeWords.js'
 import { useDays } from './useDays.js'
 import { loadPeriod, savePeriod, periodOf } from './ledger.js'
-import { getTags, findBlocks, getPlayed, getWatched, getSetup } from './api.js'
+import {
+  getTags, findBlocks, getPlayed, getWatched, getSeriesWatched, getMoviesWatched, getSetup,
+} from './api.js'
 import { Covers } from './face.js'
 import {
   Appearance, loadAppearance, saveAppearance, normalise, widthOf, wearTheme,
 } from './appearance.js'
 import {
-  applyPaint, applyResize, removeBlock, setNote, setGame, setShow,
+  applyPaint, applyResize, removeBlock, setNote, setGame, setShow, setSeries, setFilm,
   newId, overlapCluster, snipBlock, moveBlocks, pasteBlocks,
 } from './blocks.js'
 import {
@@ -42,13 +44,19 @@ const COVERS_EVERY_MS = 10 * 60_000
 
 /** Every cover the vault knows of, keyed the way face.js looks them up. */
 async function knownCovers() {
-  const [games, shows] = await Promise.all([
+  const [games, shows, series, films] = await Promise.all([
     getPlayed().catch(() => ({})),
     getWatched().catch(() => ({})),
+    getSeriesWatched().catch(() => ({})),
+    getMoviesWatched().catch(() => ({})),
   ])
   const covers = new Map()
   for (const [name, facts] of Object.entries(games ?? {})) if (facts?.cover) covers.set(`game:${name}`, facts.cover)
+  // A series is a show like an anime is; the anime's picture wins the rare
+  // name the two share, since it was there first.
+  for (const [name, facts] of Object.entries(series ?? {})) if (facts?.cover) covers.set(`show:${name}`, facts.cover)
   for (const [name, facts] of Object.entries(shows ?? {})) if (facts?.cover) covers.set(`show:${name}`, facts.cover)
+  for (const [name, facts] of Object.entries(films ?? {})) if (facts?.cover) covers.set(`film:${name}`, facts.cover)
   return covers
 }
 
@@ -75,7 +83,9 @@ function copyOf(from, picks, days) {
       note: block.note ?? '',
       game: block.game ?? '',
       show: block.show ?? '',
+      season: block.season ?? null,
       episodes: block.episodes ?? [],
+      film: block.film ?? '',
       cover: block.cover ?? '',
       slots: block.endSlot - block.startSlot,
       at: daysBetween(first, date) * SLOTS_PER_DAY + block.startSlot,
@@ -557,6 +567,8 @@ export default function App() {
 
   const handleGame = (id, game) => handleNamed(id, (blocks) => setGame(blocks, id, game))
   const handleShow = (id, show) => handleNamed(id, (blocks) => setShow(blocks, id, show))
+  const handleSeries = (id, series) => handleNamed(id, (blocks) => setSeries(blocks, id, series))
+  const handleFilm = (id, film) => handleNamed(id, (blocks) => setFilm(blocks, id, film))
 
   // `at` is only there when the whole block was slid: it is the height the
   // pointer was holding it at. Dragging an edge sends nothing, and keeps the
@@ -773,6 +785,8 @@ export default function App() {
           onNote={(id, note) => editDay(selected.date, (prev) => setNote(prev, id, note))}
           onGame={handleGame}
           onShow={handleShow}
+          onSeries={handleSeries}
+          onFilm={handleFilm}
           onDelete={() => {
             editDay(selected.date, (prev) => removeBlock(prev, selected.id))
             setSelected(null)
@@ -795,7 +809,7 @@ export default function App() {
             find: Boolean(find),
             armedTag: armed && view === 'day' ? tags.find((t) => t.id === armed.tag)?.name ?? armed.tag : '',
             note: selectedBlock
-              ? selectedBlock.game || selectedBlock.show || tags.find((t) => t.id === selectedBlock.tag)?.name || selectedBlock.tag
+              ? selectedBlock.game || selectedBlock.show || selectedBlock.film || tags.find((t) => t.id === selectedBlock.tag)?.name || selectedBlock.tag
               : '',
           })}
         />

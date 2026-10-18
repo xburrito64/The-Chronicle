@@ -6,6 +6,8 @@
   { "id": "reading",        "name": "Reading",          "colour": "oklch(0.50 0.080 85)",   "icon": "📖" },
   { "id": "walk",           "name": "Walk",             "colour": "oklch(0.45 0.070 158)",  "icon": "🚶" },
   { "id": "anime",          "name": "Anime",            "colour": "oklch(0.42 0.080 350)",  "icon": "🌸" },
+  { "id": "series",         "name": "Series",           "colour": "oklch(0.43 0.075 240)",  "icon": "📺" },
+  { "id": "movie",          "name": "Movie",            "colour": "oklch(0.40 0.085 15)",   "icon": "🎬" },
   { "id": "youtube",        "name": "Youtube",          "colour": "oklch(0.45 0.095 28)",   "icon": "▶️" },
   { "id": "music",          "name": "Music",            "colour": "oklch(0.44 0.085 320)",  "icon": "🎵" },
   { "id": "food",           "name": "Food",             "colour": "oklch(0.52 0.090 60)",   "icon": "🍽️" },

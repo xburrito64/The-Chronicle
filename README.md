@@ -79,12 +79,14 @@ folder. Use forward slashes:
   "port": 5274,
   "rawgKey": "",
   "steamGridKey": "",
+  "tmdbKey": "",
   "anilistClientId": "",
   "anilistToken": ""
 }
 ```
 
-`rawgKey` and `steamGridKey` are only for naming games, and the two `anilist`
+`rawgKey` and `steamGridKey` are only for naming games, `tmdbKey` only for
+naming series and films, and the two `anilist`
 lines only for sending anime progress to an account — see below. Leave any of them empty and
 everything else works exactly as before; the box that needs one says so when
 you open it. The AniList lines are written by the app itself, from a panel in
@@ -100,7 +102,7 @@ right opens the settings. **Tags** adds, renames, recolours, reorders and hides
 tags and gives them pictures; **Look** has the bar width, icon sets, tag-box
 styles, block looks (classic, mana crystal, grimoire, woven),
 labels, covers and hints; **Setup** picks the vault folder and takes
-the RAWG and SteamGridDB keys, checking each with its site before keeping it.
+the RAWG, SteamGridDB and TMDB keys, checking each with its site before keeping it.
 A tag's id never changes once it is made, which is why renaming one is safe
 for every note that uses it — and a tag still used by any day can be hidden
 but not deleted.
@@ -316,8 +318,49 @@ back. The code lasts a year. The app writes both into the settings file
 itself and checks the code before keeping it, so a bad paste is refused while
 it can still be explained rather than sitting in a file looking connected.
 
-Nothing else in the app touches the network, and nothing is sent anywhere
-without that button being pressed.
+Apart from the lookups (games, anime, series and films), nothing else in the
+app touches the network, and nothing is sent anywhere without that button
+being pressed.
+
+### Series and films
+
+A **Series** block and a **Movie** block ask what they were, the way an Anime
+block does, looked up on [TMDB](https://www.themoviedb.org). TMDB wants a
+free key from an account: paste either its API key or its longer read access
+token under Settings → Setup, and it is checked before it is kept.
+
+A series is one record with its seasons inside it, unlike anime, where every
+season is its own entry. So the questions are the same three — which show,
+which season, which episodes — but the block keeps the season beside the
+episodes, since episode 3 means nothing until it is known whose:
+
+```json
+{"tag":"series","start":"21:00","end":"22:00",
+ "show":"South Park","season":27,"episodes":[3,4]}
+```
+
+Only aired episodes are offered, specials are left out, and episodes already
+written down are underlined, per season. Before anything is typed the last
+four series watched are offered; clicking one opens the season you were on —
+or the next one, once every aired episode of that one is written down. A long
+show's season list opens at the season you were last on.
+
+Two evenings of the same season fold together like any two blocks of the same
+thing; two seasons side by side stay two.
+
+A film is one question: pick it and that is the whole of it.
+
+```json
+{"tag":"movie","start":"20:00","end":"22:50","film":"Dune: Part Two"}
+```
+
+Posters are kept beside the notes like every other cover, and what is known
+about each (year, running time, genres, the TMDB id) sits beside them in
+`covers/series.json` and `covers/movies.json` — two files, because a series
+and a film can share a name. TMDB is only ever read from; there is nothing to
+send back.
+
+*This product uses the TMDB API but is not endorsed or certified by TMDB.*
 
 ## Layout
 

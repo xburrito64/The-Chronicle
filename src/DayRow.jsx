@@ -419,7 +419,7 @@ const DayRow = memo(function DayRow({
     : { left: `${pct(from)}%`, width: `${pct(to - from)}%` })
   /** '', ' hit', or ' hit current' — what a search has to say about a block. */
   const litFor = (_date, b) => {
-    const at = marks?.get(`${slotToTime(b.startSlot)}|${slotToTime(b.endSlot)}|${b.tag}|${b.game ?? ''}|${b.show ?? ''}`)
+    const at = marks?.get(`${slotToTime(b.startSlot)}|${slotToTime(b.endSlot)}|${b.tag}|${b.game ?? ''}|${b.show ?? ''}|${b.film ?? ''}`)
     return at === undefined ? '' : at === currentAt ? ' hit current' : ' hit'
   }
 
@@ -650,7 +650,7 @@ const DayRow = memo(function DayRow({
               zIndex: piece.z,
               '--tag': tag?.colour ?? '#555',
             }}
-            title={`${b.game || b.show || tag?.name || b.tag} · ${slotToTime(b.startSlot)}–${slotToTime(b.endSlot)}${b.note ? `
+            title={`${b.game || b.show || b.film || tag?.name || b.tag} · ${slotToTime(b.startSlot)}–${slotToTime(b.endSlot)}${b.note ? `
 ${b.note}` : ''}`}
           />
         )

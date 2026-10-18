@@ -64,3 +64,49 @@ export function recentShows(all, leave = '', count = 4) {
     .slice(0, count)
     .map(({ at, ...show }) => show)
 }
+
+/**
+ * The series watched most recently, newest first — the same offer as
+ * recentShows, for a series: its TMDB id, the season last watched, and the
+ * furthest episode of that season.
+ *
+ * Returns [{ name, id, season, last, upTo, seen }], where `seen` is every
+ * episode of that season already written down.
+ */
+export function recentSeries(all, leave = '', count = 4) {
+  return Object.entries(all ?? {})
+    .map(([name, show]) => {
+      const season = Number.isInteger(show.lastSeason) ? show.lastSeason : null
+      const seen = season ? show.seenBySeason?.[season] ?? [] : []
+      return {
+        name,
+        id: show.tmdbId ?? null,
+        season,
+        at: show.lastAt ?? '',
+        last: show.last,
+        upTo: furthest(seen),
+        seen,
+      }
+    })
+    .filter((show) => show.id && show.at && show.name !== leave)
+    .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
+    .slice(0, count)
+    .map(({ at, ...show }) => show)
+}
+
+/**
+ * Which season to open a series at: the one last watched — or the next one,
+ * when every episode of that one that has aired is already written down and
+ * the next has started. Finishing season 26 one evening means season 27 the
+ * next.
+ *
+ * `seasons` is the list from the lookup, [{ number, aired }].
+ */
+export function seasonToOpen(seasons, last, seen = []) {
+  const at = seasons.find((s) => s.number === last)
+  if (!at) return seasons[seasons.length - 1] ?? null
+  const done = at.aired > 0 && seen.length >= at.aired
+    && Array.from({ length: at.aired }, (_, i) => i + 1).every((n) => seen.includes(n))
+  const next = seasons.find((s) => s.number > at.number && s.aired > 0)
+  return done && next ? next : at
+}

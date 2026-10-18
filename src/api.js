@@ -152,3 +152,28 @@ export const setRewatching = (name, rewatching) =>
 
 /** Where a kept cover is served from. */
 export const coverUrl = (file) => `/api/covers/${encodeURIComponent(file)}`
+
+// --- series and films, off TMDB ---------------------------------------
+
+/** Series matching what has been typed; `configured` is false with no key yet. */
+export const searchSeries = (query, signal) =>
+  request(`/api/series?q=${encodeURIComponent(query)}`, { signal })
+/** Every season of a series, with how much of each has aired, and the show itself. */
+export const seriesSeasons = (id, signal) =>
+  request(`/api/series/seasons?id=${encodeURIComponent(id)}`, { signal })
+/** Take a series: its poster into the vault, its facts beside the covers. */
+export const attachSeries = (show) => request('/api/series/attach', json('POST', show))
+/** How long has gone into each series, and which episodes of which season. */
+export const getSeriesWatched = () => request('/api/series/watched')
+export const setSeriesGenres = (name, genres) =>
+  request('/api/series/genres', json('POST', { name, genres }))
+
+/** Films matching what has been typed; `configured` is false with no key yet. */
+export const searchMovies = (query, signal) =>
+  request(`/api/movies?q=${encodeURIComponent(query)}`, { signal })
+/** Take a film: its poster into the vault, its facts beside the covers. */
+export const attachMovie = (film) => request('/api/movies/attach', json('POST', film))
+/** How long has gone into each film, and how many times. */
+export const getMoviesWatched = () => request('/api/movies/watched')
+export const setMovieGenres = (name, genres) =>
+  request('/api/movies/genres', json('POST', { name, genres }))

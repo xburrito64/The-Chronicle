@@ -10,6 +10,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { readJson } from './config.js'
+import { authFor } from './tmdb.js'
 
 const refused = (message) => Object.assign(new Error(message), { status: 400 })
 
@@ -47,7 +48,8 @@ export function cleanKey(raw) {
   const key = String(raw ?? '').trim()
   if (key === '') return ''
   if (/\s/.test(key)) throw refused('that key has a space in it — copy just the key, nothing around it')
-  if (!/^[A-Za-z0-9_-]{8,128}$/.test(key)) throw refused('that does not look like a key — it should be letters and numbers only')
+  // Dots too: TMDB's long "read access token" is three parts joined by them.
+  if (!/^[A-Za-z0-9_.-]{8,512}$/.test(key)) throw refused('that does not look like a key — it should be letters and numbers only')
   return key
 }
 
@@ -84,6 +86,14 @@ const CHECKS = {
     'https://www.steamgriddb.com/api/v2/search/autocomplete/minecraft',
     { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(10_000) },
   ),
+  // Either of the two kinds TMDB hands out — see authFor.
+  tmdbKey: (key) => {
+    const auth = authFor(key)
+    return fetch(
+      `https://api.themoviedb.org/3/configuration?${new URLSearchParams(auth.params)}`,
+      { headers: auth.headers, signal: AbortSignal.timeout(10_000) },
+    )
+  },
 }
 export const KEY_NAMES = Object.keys(CHECKS)
 

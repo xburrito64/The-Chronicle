@@ -198,6 +198,28 @@ await t('the first day logged passes over notes with nothing logged, and touches
   await fs.rm(vault, { recursive: true, force: true })
 })
 
+await t('a series keeps its season beside the episodes', async () => {
+  const [e] = validateEntries([{ tag: 'series', start: '21:00', end: '22:00', show: 'South Park', season: 27, episodes: [4, 3], cover: 'south-park-tv2190.jpg' }])
+  assert.deepStrictEqual(e, { tag: 'series', start: '21:00', end: '22:00', show: 'South Park', season: 27, episodes: [3, 4], cover: 'south-park-tv2190.jpg' })
+})
+
+await t('a season with no show is not written', async () => {
+  const [e] = validateEntries([{ tag: 'series', start: '21:00', end: '22:00', season: 3 }])
+  assert.equal(e.season, undefined)
+})
+
+await t('a season that is not a small whole number is refused', async () => {
+  for (const season of [0, -1, 2.5, '3', 1000]) {
+    assert.throws(() => validateEntries([{ tag: 'series', start: '21:00', end: '22:00', show: 'X', season }]))
+  }
+})
+
+await t('a film is a name and its poster', async () => {
+  const [e] = validateEntries([{ tag: 'movie', start: '20:00', end: '22:10', film: 'Dune: Part Two', cover: 'dune-part-two-film693134.jpg', episodes: [1] }])
+  assert.deepStrictEqual(e, { tag: 'movie', start: '20:00', end: '22:10', film: 'Dune: Part Two', cover: 'dune-part-two-film693134.jpg' })
+  assert.throws(() => validateEntries([{ tag: 'movie', start: '20:00', end: '22:10', film: 5 }]))
+})
+
 await fs.rm(dir, { recursive: true, force: true })
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

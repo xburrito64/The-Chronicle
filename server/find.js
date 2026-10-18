@@ -26,14 +26,14 @@
  * you were actually looking for.
  */
 function haystack(entry, tagName) {
-  return [tagName, entry.tag, entry.game, entry.show, entry.note]
+  return [tagName, entry.tag, entry.game, entry.show, entry.film, entry.note]
     .filter(Boolean)
     .join('\n')
     .toLowerCase()
 }
 
 /** What a block should be called in a list of results. */
-const nameOf = (entry, tagName) => entry.game || entry.show || tagName || entry.tag
+const nameOf = (entry, tagName) => entry.game || entry.show || entry.film || tagName || entry.tag
 
 /**
  * Every block in `days` that answers to `query`, oldest first.
@@ -68,6 +68,7 @@ export function findIn(days, query, tags = []) {
         tag: entry.tag,
         game: entry.game ?? '',
         show: entry.show ?? '',
+        film: entry.film ?? '',
         note: entry.note ?? '',
         what: nameOf(entry, tagName),
       })

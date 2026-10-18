@@ -20,6 +20,7 @@ export function coverFor(block, covers) {
   if (block?.cover) return block.cover
   if (block?.game) return covers?.get(`game:${block.game}`) ?? ''
   if (block?.show) return covers?.get(`show:${block.show}`) ?? ''
+  if (block?.film) return covers?.get(`film:${block.film}`) ?? ''
   return ''
 }
 
@@ -48,7 +49,7 @@ export const COVER_ASPECT = 2 / 3
  * gets the tag back untouched.
  */
 export function blockFace(tag, block, covers) {
-  const name = block?.game || block?.show
+  const name = block?.game || block?.show || block?.film
   if (!tag || !name) return tag
   const cover = coverFor(block, covers)
   return {

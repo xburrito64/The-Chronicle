@@ -111,6 +111,27 @@ export default function SetupPanel() {
       </section>
 
       <section className="settingsgroup">
+        <h3>Series and films</h3>
+        <p className="settingsnote">
+          Looked up on TMDB, for the Series and Movie tags. One free key from your TMDB account —
+          either the API key or the longer read access token works.
+        </p>
+        <KeyField
+          which="tmdbKey"
+          name="TMDB"
+          what="Finding series and films, their seasons, episodes and posters."
+          where="https://www.themoviedb.org/settings/api"
+          whereText="themoviedb.org/settings/api"
+          saved={setup.keys?.tmdbKey}
+          onSaved={load}
+        />
+        {/* TMDB asks for this wherever its data is used. */}
+        <p className="settingsnote small">
+          This product uses the TMDB API but is not endorsed or certified by TMDB.
+        </p>
+      </section>
+
+      <section className="settingsgroup">
         <h3>AniList</h3>
         <p className="settingsnote">
           {anilist?.connected

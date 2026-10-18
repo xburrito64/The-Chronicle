@@ -4,6 +4,7 @@ import path from 'node:path'
 import { createStore, DATE_RE } from './store.js'
 import { createGames } from './games.js'
 import { createAnime } from './anime.js'
+import { createTmdb } from './tmdb.js'
 import { findIn } from './find.js'
 import { readJson } from './config.js'
 import { withIcons, describeSets, iconSets, ICON_EXTENSIONS } from './icons.js'
@@ -65,12 +66,22 @@ export function createApp({
     token: () => settings().anilistToken ?? '',
     clientId: () => settings().anilistClientId ?? '',
   })
+  // Series and films, off TMDB. Its key is read off the settings each time,
+  // like the others, so one pasted in while the app is open counts at once.
+  const tmdb = createTmdb({ coversDir, key: () => settings().tmdbKey ?? '' })
   const played = createTotals(store, games, 'game')
-  const watched = createTotals(store, anime, 'show')
+  // Anime and series both say `show` in a note; the tag is what keeps the
+  // two apart, so each is counted from its own blocks only.
+  const watched = createTotals(store, anime, 'show', { tag: 'anime' })
+  const seriesWatched = createTotals(store, tmdb.series, 'show', { tag: 'series' })
+  const filmsWatched = createTotals(store, tmdb.movie, 'film', { tag: 'movie' })
   // The first day anything was logged, found once and kept until a day is
   // written (which could be an earlier one).
   let firstLogged = null
-  const forget = () => { played.forget(); watched.forget(); firstLogged = null }
+  const forget = () => {
+    played.forget(); watched.forget(); seriesWatched.forget(); filmsWatched.forget()
+    firstLogged = null
+  }
 
   // Covers that were not there when their games were picked, looked for again
   // in the background. Nobody has to press anything or open anything; the
@@ -555,6 +566,67 @@ export function createApp({
     res.json({ rewatching: on })
   }))
 
+  // --- series and films ---------------------------------------------------
+  // TMDB, which wants a key — so, like the games, a search with no key
+  // answers "not set up yet" rather than failing.
+
+  for (const [route, side, totals] of [
+    ['series', tmdb.series, seriesWatched],
+    ['movies', tmdb.movie, filmsWatched],
+  ]) {
+    app.get(`/api/${route}`, wrap(async (req, res) => {
+      if (!tmdb.configured) return res.json({ configured: false, results: [] })
+      res.json({ configured: true, results: await side.search(req.query.q) })
+    }))
+
+    /** How long has gone into each, which episodes are written down, and what it is. */
+    app.get(`/api/${route}/watched`, wrap(async (_req, res) => {
+      res.json(await totals.all())
+    }))
+
+    app.post(`/api/${route}/genres`, wrap(async (req, res) => {
+      const { name, genres } = req.body ?? {}
+      const saved = await side.setGenres(name, genres)
+      forget()
+      res.json(saved)
+    }))
+  }
+
+  /** Every season of a series, with how much of each has aired. */
+  app.get('/api/series/seasons', wrap(async (req, res) => {
+    res.json(await tmdb.series.seasons(req.query.id))
+  }))
+
+  /**
+   * Take a series or a film: its poster into the vault, and what it is
+   * written down beside the covers. The full record is asked for first where
+   * the search hit left things out — how long an episode or the film runs,
+   * how many seasons — and a failure there costs only those facts.
+   */
+  for (const [route, side, full] of [
+    ['series', tmdb.series, async (id) => (await tmdb.series.seasons(id)).show],
+    ['movies', tmdb.movie, (id) => tmdb.movie.details(id)],
+  ]) {
+    app.post(`/api/${route}/attach`, wrap(async (req, res) => {
+      const picked = req.body ?? {}
+      const kept = await side.keep({ id: picked.id, name: picked.name, image: picked.cover })
+      try {
+        const more = await full(picked.id).catch(() => ({}))
+        await side.remember({
+          ...picked,
+          duration: more.duration ?? picked.duration ?? null,
+          seasons: more.seasons ?? picked.seasons ?? null,
+          genres: more.genres?.length ? more.genres : picked.genres,
+          cover: kept.cover,
+        })
+        forget()
+      } catch (err) {
+        console.error(`could not write down what this ${route === 'series' ? 'series' : 'film'} is:`, err.message)
+      }
+      res.json(kept)
+    }))
+  }
+
   // Covers are read straight off disk. They only ever arrive through the
   // routes above, so this folder holds pictures and nothing else.
   app.use('/api/covers', express.static(coversDir, { fallthrough: true }))
@@ -605,7 +677,7 @@ export function createApp({
  * until something changes it, or until it is old enough that a change made in
  * Obsidian rather than in here will have been noticed.
  */
-function createTotals(store, source, field) {
+function createTotals(store, source, field, { tag = '' } = {}) {
   let cached = null
   let when = 0
 
@@ -626,15 +698,27 @@ function createTotals(store, source, field) {
         if (day.malformed) continue
         for (const entry of day.entries) {
           const name = entry[field]
-          if (!name) continue
-          const had = totals.get(name) ?? { minutes: 0, days: new Set(), episodes: new Set() }
+          if (!name || (tag && entry.tag !== tag)) continue
+          const had = totals.get(name) ?? { minutes: 0, days: new Set(), episodes: new Set(), seasons: new Map() }
           had.minutes += minutesOf(entry.end) - minutesOf(entry.start)
           had.days.add(date)
-          for (const episode of entry.episodes ?? []) had.episodes.add(episode)
+          had.times = (had.times ?? 0) + 1
+          // A series' episodes are numbered within a season, so they are kept
+          // per season: episode 3 of season 2 is not episode 3 of season 5.
+          if (Number.isInteger(entry.season)) {
+            const into = had.seasons.get(entry.season) ?? new Set()
+            for (const episode of entry.episodes ?? []) into.add(episode)
+            had.seasons.set(entry.season, into)
+          } else {
+            for (const episode of entry.episodes ?? []) had.episodes.add(episode)
+          }
           // When it was last on, to the minute: two shows watched the same
           // evening still come in the order they were watched.
           const at = `${date} ${entry.end}`
-          if (!had.lastAt || at > had.lastAt) had.lastAt = at
+          if (!had.lastAt || at > had.lastAt) {
+            had.lastAt = at
+            if (Number.isInteger(entry.season)) had.lastSeason = entry.season
+          }
           totals.set(name, had)
         }
       }
@@ -647,7 +731,7 @@ function createTotals(store, source, field) {
       const known = await source.known()
       const out = {}
       for (const name of new Set([...totals.keys(), ...Object.keys(known)])) {
-        const total = totals.get(name) ?? { minutes: 0, days: new Set(), episodes: new Set() }
+        const total = totals.get(name) ?? { minutes: 0, days: new Set(), episodes: new Set(), seasons: new Map() }
         const dates = [...total.days].sort()
         out[name] = {
           minutes: total.minutes,
@@ -655,6 +739,12 @@ function createTotals(store, source, field) {
           first: dates[0],
           last: dates[dates.length - 1],
           ...(total.lastAt ? { lastAt: total.lastAt } : {}),
+          ...(total.times ? { times: total.times } : {}),
+          ...(total.seasons.size > 0 ? {
+            seenBySeason: Object.fromEntries([...total.seasons]
+              .map(([n, eps]) => [n, [...eps].sort((a, b) => a - b)])),
+            lastSeason: total.lastSeason,
+          } : {}),
           // `seen`, not `episodes` — the facts beside the covers already use
           // that word for how many the show has, and the two would land on
           // each other. How many there are and which ones you watched are

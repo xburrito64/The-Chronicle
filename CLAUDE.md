@@ -24,7 +24,7 @@ it that way.
 
 **No accounts, no cloud, no telemetry.** The only things that leave the
 machine are the cover and metadata lookups (RAWG, Steam, SteamGridDB,
-AniList), and a single button that sends anime progress to AniList. Nothing is
+AniList, TMDB), and a single button that sends anime progress to AniList. Nothing is
 ever sent without a press.
 
 **Secrets live in `config.json`, which is gitignored.** It holds API keys and

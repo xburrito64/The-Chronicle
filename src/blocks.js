@@ -49,9 +49,13 @@ function placeFor(blocks, atSlot, lane) {
  */
 const sameThing = (a, b) =>
   a.tag === b.tag && (a.game ?? '') === (b.game ?? '') && (a.show ?? '') === (b.show ?? '')
+  // A series' episodes are numbered within its season, so two seasons of one
+  // show are two things: folding them together would leave one block holding
+  // episode numbers that belong to two different seasons.
+  && (a.season ?? null) === (b.season ?? null) && (a.film ?? '') === (b.film ?? '')
 
 /** What a block is, as one word: its tag and whatever was played or watched. */
-const thingOf = (b) => `${b.tag}|${b.game ?? ''}|${b.show ?? ''}`
+const thingOf = (b) => `${b.tag}|${b.game ?? ''}|${b.show ?? ''}|${b.season ?? ''}|${b.film ?? ''}`
 
 /**
  * Every place a block was snipped in two: each moment where one block ends
@@ -433,6 +437,36 @@ export function setShow(blocks, id, show) {
   // Cut halves of a show stay halves while their episodes are said one half
   // at a time: the cuts are the ones there were before, and a half that is
   // still the same show still meets its other half at one.
+  return target ? mergeSameTag(named, target, cutsOf(blocks)) : named
+}
+
+/**
+ * Say which series was being watched — the show, the season, the episodes —
+ * or take it back off. `series` is { name, cover, season, episodes } or null.
+ *
+ * The same as an anime, with the season beside it: a series is one record
+ * with its seasons inside, and its episodes are numbered within one of them.
+ */
+export function setSeries(blocks, id, series) {
+  const named = blocks.map((b) => (b.id === id
+    ? {
+      ...b,
+      show: series?.name ?? '',
+      cover: series?.cover ?? '',
+      season: series?.name && Number.isInteger(series.season) ? series.season : null,
+      episodes: series?.name ? [...new Set(series.episodes ?? [])].sort((a, b2) => a - b2) : [],
+    }
+    : b))
+  const target = named.find((b) => b.id === id)
+  return target ? mergeSameTag(named, target, cutsOf(blocks)) : named
+}
+
+/** Say which film it was, or take it back off. `film` is { name, cover } or null. */
+export function setFilm(blocks, id, film) {
+  const named = blocks.map((b) => (
+    b.id === id ? { ...b, film: film?.name ?? '', cover: film?.cover ?? '' } : b
+  ))
+  const target = named.find((b) => b.id === id)
   return target ? mergeSameTag(named, target, cutsOf(blocks)) : named
 }
 
@@ -864,15 +898,17 @@ export function overlapCluster(blocks, id) {
 export function serialise(blocks) {
   // Saved in list order, not sorted by time: the order is what decides which
   // block stacks above which, and it has to survive a reload.
-  return blocks.map(({ tag, startSlot, endSlot, note, game, show, episodes, cover }) => {
+  return blocks.map(({ tag, startSlot, endSlot, note, game, show, season, episodes, film, cover }) => {
     const entry = { tag, start: slotToTime(startSlot), end: slotToTime(endSlot) }
     if (note) entry.note = note
     // The name goes in whether or not there is a picture; the picture is no
     // use on its own, so it only goes in behind the name.
     if (game) entry.game = game
     if (show) entry.show = show
+    if (show && Number.isInteger(season)) entry.season = season
     if (show && episodes?.length) entry.episodes = episodes
-    if ((game || show) && cover) entry.cover = cover
+    if (film) entry.film = film
+    if ((game || show || film) && cover) entry.cover = cover
     return entry
   })
 }
@@ -886,7 +922,9 @@ export function deserialise(entries) {
     note: e.note ?? '',
     game: e.game ?? '',
     show: e.show ?? '',
+    season: Number.isInteger(e.season) ? e.season : null,
     episodes: e.episodes ?? [],
+    film: e.film ?? '',
     cover: e.cover ?? '',
   }))
 }

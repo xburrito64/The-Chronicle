@@ -16,6 +16,8 @@ const COVER_RE = /^[\w][\w .-]{0,119}\.(jpe?g|png|webp|gif)$/i
 // back and drawn.
 const MAX_EPISODES = 60
 const MAX_EPISODE_NO = 9999
+// A series' season is a small whole number. Nothing has run to three digits.
+const MAX_SEASON = 999
 
 const toMinutes = (t) => {
   const [h, m] = t.split(':').map(Number)
@@ -53,6 +55,10 @@ export function validateEntries(entries, { grid = true } = {}) {
     if (e.note != null && typeof e.note !== 'string') throw new Error(`${where}: note must be text`)
     if (e.game != null && typeof e.game !== 'string') throw new Error(`${where}: game must be text`)
     if (e.show != null && typeof e.show !== 'string') throw new Error(`${where}: show must be text`)
+    if (e.film != null && typeof e.film !== 'string') throw new Error(`${where}: film must be text`)
+    if (e.season != null && (!Number.isInteger(e.season) || e.season < 1 || e.season > MAX_SEASON)) {
+      throw new Error(`${where}: bad season "${e.season}"`)
+    }
     if (e.cover && !COVER_RE.test(e.cover)) throw new Error(`${where}: bad cover "${e.cover}"`)
 
     // Which episodes, in order and each of them once. Sorted here rather than
@@ -82,8 +88,14 @@ export function validateEntries(entries, { grid = true } = {}) {
     // one part of this that is a number rather than a name, and they still
     // read plainly in the note: "show", then 3, 4, 5.
     if (e.show) clean.show = e.show
+    // A series says which season, since its episodes are numbered within one:
+    // "South Park", season 27, episodes 3, 4. Only beside a show — a season
+    // of nothing in particular would be a number with no meaning.
+    if (e.show && e.season != null) clean.season = e.season
     if (e.show && episodes?.length) clean.episodes = episodes
-    if ((e.game || e.show) && e.cover) clean.cover = e.cover
+    // A film is one sitting, so it is only ever a name.
+    if (e.film) clean.film = e.film
+    if ((e.game || e.show || e.film) && e.cover) clean.cover = e.cover
     return { clean, start, end }
   })
 

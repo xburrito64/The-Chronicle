@@ -1,5 +1,5 @@
 import assert from 'node:assert'
-import { formatEpisodes, episodeLabel, furthest, recentShows } from './episodes.js'
+import { formatEpisodes, episodeLabel, furthest, recentShows, recentSeries, seasonToOpen } from './episodes.js'
 
 let pass = 0, fail = 0
 const t = (name, fn) => {
@@ -74,6 +74,29 @@ t('the show the block already is is left out', () => {
   }
   assert.deepStrictEqual(recentShows(all, 'A').map((s) => s.name), ['B'])
   assert.deepStrictEqual(recentShows(null), [])
+})
+
+t('the series watched lately come with the season last watched', () => {
+  const all = {
+    'South Park': { tmdbId: 2190, last: '2026-10-17', lastAt: '2026-10-17 22:00', lastSeason: 27, seenBySeason: { 26: [1, 2], 27: [1, 2, 3] } },
+    Fargo: { tmdbId: 60622, last: '2026-10-10', lastAt: '2026-10-10 21:00', lastSeason: 1, seenBySeason: { 1: [5] } },
+    Picked: { tmdbId: 1 },
+  }
+  assert.deepStrictEqual(recentSeries(all), [
+    { name: 'South Park', id: 2190, season: 27, last: '2026-10-17', upTo: 3, seen: [1, 2, 3] },
+    { name: 'Fargo', id: 60622, season: 1, last: '2026-10-10', upTo: 5, seen: [5] },
+  ])
+  assert.deepStrictEqual(recentSeries(all, 'South Park').map((s) => s.name), ['Fargo'])
+})
+
+t('a series opens at the season last watched, or the next once that one is done', () => {
+  const seasons = [{ number: 26, aired: 6 }, { number: 27, aired: 4 }, { number: 28, aired: 0 }]
+  assert.equal(seasonToOpen(seasons, 26, [1, 2, 3]).number, 26)
+  assert.equal(seasonToOpen(seasons, 26, [1, 2, 3, 4, 5, 6]).number, 27)
+  // Nothing of the next one out yet: stay where you are.
+  assert.equal(seasonToOpen(seasons, 27, [1, 2, 3, 4]).number, 27)
+  // A season no longer listed: the newest there is.
+  assert.equal(seasonToOpen(seasons, 30, []).number, 28)
 })
 
 console.log(`\n${pass} passed, ${fail} failed`)

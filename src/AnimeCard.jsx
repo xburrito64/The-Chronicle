@@ -446,7 +446,7 @@ function AnilistSetup({ link, onDone, onCancel }) {
  * Typing a genre in. Enter keeps it, escape or clicking away gives up — the
  * same two answers every other small box in here takes.
  */
-function GenreInput({ onDone }) {
+export function GenreInput({ onDone }) {
   const [text, setText] = useState('')
   const box = useRef(null)
   useEffect(() => { box.current?.focus() }, [])

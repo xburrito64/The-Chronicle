@@ -216,7 +216,7 @@ export function ledgerOf(days, from, to, today, coverOf = () => '') {
     for (let i = 0; i < RHYTHM_BINS; i++) bins[i].any += any[i]
 
     for (const b of blocks) {
-      const name = b.game || b.show
+      const name = b.game || b.show || b.film
       if (!name) continue
       const into = b.game ? played : watched
       const had = into.get(name) ?? { slots: 0, cover: '', episodes: 0 }

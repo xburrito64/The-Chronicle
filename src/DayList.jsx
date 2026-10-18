@@ -534,14 +534,14 @@ function DayList({
   const found = new Map()
   for (const [at, hit] of (find?.hits ?? []).entries()) {
     const onDay = found.get(hit.date) ?? new Map()
-    onDay.set(`${hit.start}|${hit.end}|${hit.tag}|${hit.game}|${hit.show}`, at)
+    onDay.set(`${hit.start}|${hit.end}|${hit.tag}|${hit.game}|${hit.show}|${hit.film ?? ''}`, at)
     found.set(hit.date, onDay)
   }
   const searching = (find?.hits.length ?? 0) > 0
   /** Whether a day is in the stretch the ledger beside the Overview is adding up. */
   const inPeriod = (date) => !isDay && !!period && date >= period.from && date <= period.to
   const markOf = (date, b) => found.get(date)?.get(
-    `${slotToTime(b.startSlot)}|${slotToTime(b.endSlot)}|${b.tag}|${b.game ?? ''}|${b.show ?? ''}`,
+    `${slotToTime(b.startSlot)}|${slotToTime(b.endSlot)}|${b.tag}|${b.game ?? ''}|${b.show ?? ''}|${b.film ?? ''}`,
   )
   /** '', ' hit', or ' hit current' — what a search has to say about a block. */
   const litFor = (date, b) => {

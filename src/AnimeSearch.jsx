@@ -1,8 +1,8 @@
 import { useContext, useEffect, useRef, useState } from 'react'
-import { searchAnime, animeSeasons, attachAnime, getWatched, coverUrl } from './api.js'
+import { searchAnime, animeSeasons, attachAnime, getWatched } from './api.js'
 import { Covers } from './face.js'
 import { recentShows } from './episodes.js'
-import { todayISO, shiftDate, weekdayOf, formatShortDate } from './time.js'
+import RecentTiles, { whenOf } from './RecentTiles.jsx'
 
 // Long enough that typing a name doesn't fire a search per letter, short
 // enough that stopping feels like the results were already waiting.
@@ -282,36 +282,19 @@ export default function AnimeSearch({ block, startWith, onAttach, onCancel }) {
           on it. Only before anything is typed, and only when there is nothing
           to go back to; changing a show already says what it is changing. */}
       {showingRecent && (
-        <div className="recentshows">
-          <span className="gamerule" aria-hidden="true"><i /></span>
-          <ul className="recentlist">
-            {recent.map((show, i) => {
-              const cover = covers?.get(`show:${show.name}`)
-              return (
-                <li key={show.name}>
-                  <button
-                    type="button"
-                    className={`recentshow${i === cursor ? ' on' : ''}`}
-                    title={`${show.name} — straight to its episodes`}
-                    onMouseEnter={() => setCursor(i)}
-                    onClick={() => pickRecent(show)}
-                  >
-                    {cover
-                      ? <img className="recentshot" src={coverUrl(cover)} alt="" loading="lazy" />
-                      : <span className="recentshot none" aria-hidden="true">🌸</span>}
-                    <span className="recentbody">
-                      <span className="recentname">{show.name}</span>
-                      <span className="recentwhen">
-                        {show.upTo > 0 && <>ep {show.upTo} · </>}
-                        {whenOf(show.last)}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
+        <RecentTiles
+          items={recent.map((show) => ({
+            key: show.name,
+            name: show.name,
+            cover: covers?.get(`show:${show.name}`) ?? '',
+            meta: `${show.upTo > 0 ? `ep ${show.upTo} · ` : ''}${whenOf(show.last)}`,
+            title: `${show.name} — straight to its episodes`,
+            show,
+          }))}
+          cursor={cursor}
+          setCursor={setCursor}
+          onPick={(item) => pickRecent(item.show)}
+        />
       )}
 
       {step === 'find' && state === 'idle' && !block.show && !showingRecent && (
@@ -437,11 +420,3 @@ function countOf(show) {
   return `${show.aired} of ${show.episodes ?? '?'} aired`
 }
 
-/** When a show was last on, the way you would say it. */
-function whenOf(date) {
-  if (!date) return ''
-  const today = todayISO()
-  if (date === today) return 'today'
-  if (date === shiftDate(today, -1)) return 'yesterday'
-  return `${weekdayOf(date)} ${formatShortDate(date)}`
-}

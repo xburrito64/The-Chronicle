@@ -5,12 +5,17 @@ import GameSearch from './GameSearch.jsx'
 import GameCard from './GameCard.jsx'
 import AnimeSearch from './AnimeSearch.jsx'
 import AnimeCard from './AnimeCard.jsx'
-import { getWatched } from './api.js'
+import SeriesSearch from './SeriesSearch.jsx'
+import MovieSearch from './MovieSearch.jsx'
+import WatchCard from './WatchCard.jsx'
+import { getWatched, getSeriesWatched } from './api.js'
 import TagIcon from './TagIcon.jsx'
 
-/** The two tags that ask what they were. Everything else is only its tag. */
+/** The tags that ask what they were. Everything else is only its tag. */
 const GAME = 'game'
 const ANIME = 'anime'
+const SERIES = 'series'
+const MOVIE = 'movie'
 
 /**
  * The note for one block. `block` is the one clicked — its own text, its own
@@ -18,15 +23,17 @@ const ANIME = 'anime'
  * across the top so you can see what else was running at the same time.
  */
 export default function NotePanel({
-  cluster, block, date, tags, onNote, onGame, onShow, onDelete, onClose, onCopy, copied,
+  cluster, block, date, tags, onNote, onGame, onShow, onSeries, onFilm, onDelete, onClose, onCopy, copied,
 }) {
   const covers = useContext(Covers)
   const area = useRef(null)
   const tagFor = (id) => tags.find((t) => t.id === id)
 
   const clickedTag = tagFor(block.tag)
-  const named = block.tag === GAME ? block.game : block.tag === ANIME ? block.show : ''
-  const searchable = block.tag === GAME || block.tag === ANIME
+  const named = {
+    [GAME]: block.game, [ANIME]: block.show, [SERIES]: block.show, [MOVIE]: block.film,
+  }[block.tag] ?? ''
+  const searchable = [GAME, ANIME, SERIES, MOVIE].includes(block.tag)
 
   // Asking to change one opens the search back over it without taking it off
   // first: a search that finds nothing should leave you where you were rather
@@ -69,6 +76,17 @@ export default function NotePanel({
    * simply starts at the top, which is a longer way round rather than a wall.
    */
   async function toEpisodes() {
+    // A series knows its season already; only the TMDB id is beside the covers.
+    if (block.tag === SERIES) {
+      try {
+        const known = (await getSeriesWatched())[block.show]
+        setStartWith(known?.tmdbId ? { id: known.tmdbId, name: block.show, season: block.season } : null)
+      } catch {
+        setStartWith(null)
+      }
+      setChanging('episodes')
+      return
+    }
     try {
       const all = await getWatched()
       // AniList's id first: a show that has one is a show whose seasons come
@@ -165,6 +183,42 @@ export default function NotePanel({
             onChange={() => setChanging('show')}
             onEpisodes={toEpisodes}
             onRemove={() => onShow(block.id, null)}
+          />
+        ))}
+
+        {block.tag === SERIES && (searching ? (
+          <SeriesSearch
+            key={`${block.id}:${changing ?? 'new'}`}
+            block={block}
+            startWith={changing === 'episodes' ? startWith : null}
+            onAttach={(series) => { setChanging(null); onSeries(block.id, series) }}
+            onCancel={() => setChanging(null)}
+          />
+        ) : (
+          <WatchCard
+            key={block.id}
+            kind="series"
+            block={block}
+            onChange={() => setChanging('show')}
+            onEpisodes={toEpisodes}
+            onRemove={() => onSeries(block.id, null)}
+          />
+        ))}
+
+        {block.tag === MOVIE && (searching ? (
+          <MovieSearch
+            key={`${block.id}:${changing ?? 'new'}`}
+            block={block}
+            onAttach={(film) => { setChanging(null); onFilm(block.id, film) }}
+            onCancel={() => setChanging(null)}
+          />
+        ) : (
+          <WatchCard
+            key={block.id}
+            kind="movie"
+            block={block}
+            onChange={() => setChanging('show')}
+            onRemove={() => onFilm(block.id, null)}
           />
         ))}
 
