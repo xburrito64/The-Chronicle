@@ -631,6 +631,10 @@ function createTotals(store, source, field) {
           had.minutes += minutesOf(entry.end) - minutesOf(entry.start)
           had.days.add(date)
           for (const episode of entry.episodes ?? []) had.episodes.add(episode)
+          // When it was last on, to the minute: two shows watched the same
+          // evening still come in the order they were watched.
+          const at = `${date} ${entry.end}`
+          if (!had.lastAt || at > had.lastAt) had.lastAt = at
           totals.set(name, had)
         }
       }
@@ -650,6 +654,7 @@ function createTotals(store, source, field) {
           days: dates.length,
           first: dates[0],
           last: dates[dates.length - 1],
+          ...(total.lastAt ? { lastAt: total.lastAt } : {}),
           // `seen`, not `episodes` — the facts beside the covers already use
           // that word for how many the show has, and the two would land on
           // each other. How many there are and which ones you watched are

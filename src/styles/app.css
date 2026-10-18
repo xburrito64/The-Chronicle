@@ -1594,6 +1594,77 @@ h1 {
   color: var(--c-text-faint);
 }
 
+/* The shows watched lately, where the unwritten card would be: under the same
+   rule, two by two, each a small cover and its name. Fills the same height
+   the unwritten card did, so the panel does not jump between the two. */
+.recentshows {
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+}
+.recentshows .gamerule { margin: var(--s-4) 0 var(--s-3); }
+.recentlist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.recentshow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  width: 100%;
+  padding: var(--s-2);
+  text-align: left;
+  color: inherit;
+  font-family: var(--font-ui);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.recentshow.on { background: var(--c-surface-hi); border-color: var(--c-line); }
+.recentshot {
+  flex: none;
+  width: 32px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  background: var(--c-bg);
+}
+.recentshot.none {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.recentbody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+/* Two lines of the name, then an ellipsis — season names run long. */
+.recentname {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: var(--f-md);
+  font-weight: var(--w-medium);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.recentwhen {
+  font-family: var(--font-meta);
+  font-style: italic;
+  font-size: var(--f-sm);
+  color: var(--c-text-dim);
+  white-space: nowrap;
+}
+
 .gameproblem {
   margin: var(--s-4) 0 0;
   font-size: var(--f-md);

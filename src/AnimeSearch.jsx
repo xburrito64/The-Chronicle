@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
-import { searchAnime, animeSeasons, attachAnime, getWatched } from './api.js'
+import { useContext, useEffect, useRef, useState } from 'react'
+import { searchAnime, animeSeasons, attachAnime, getWatched, coverUrl } from './api.js'
+import { Covers } from './face.js'
+import { recentShows } from './episodes.js'
+import { todayISO, shiftDate, weekdayOf, formatShortDate } from './time.js'
 
 // Long enough that typing a name doesn't fire a search per letter, short
 // enough that stopping feels like the results were already waiting.
@@ -44,6 +47,10 @@ export default function AnimeSearch({ block, startWith, onAttach, onCancel }) {
   const [chosen, setChosen] = useState(() => new Set(startWith ? block.episodes ?? [] : []))
   const [seen, setSeen] = useState([]) // already written down on some day
   const [saving, setSaving] = useState(false)
+  // The last few shows watched, offered before anything is typed: most
+  // evenings are the next episode of something already on the go.
+  const [recent, setRecent] = useState([])
+  const covers = useContext(Covers)
 
   const input = useRef(null)
   const active = useRef(null)
@@ -52,6 +59,15 @@ export default function AnimeSearch({ block, startWith, onAttach, onCancel }) {
   // The box appears, the cursor is in it. Opening an Anime block with nothing
   // attached is the question being asked, and it should not need a click.
   useEffect(() => { if (step === 'find') input.current?.focus() }, [step])
+
+  useEffect(() => {
+    if (startWith) return
+    let alive = true
+    getWatched()
+      .then((all) => { if (alive) setRecent(recentShows(all, block.show ?? '')) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [startWith, block.show])
 
   // Coming straight to the episodes: the seasons still have to be fetched,
   // both for the aired count and so the way back up is there.
@@ -136,6 +152,28 @@ export default function AnimeSearch({ block, startWith, onAttach, onCancel }) {
     }
   }
 
+  /**
+   * One of the shows watched lately: straight to the season that was being
+   * watched, and its episodes. Every season is its own record, so the one
+   * remembered is the one to open; the list of all of them is still one step
+   * back, for the evening the next season was started.
+   */
+  async function pickRecent(show) {
+    setProblem('')
+    setSeasons(null)
+    setStep('seasons')
+    try {
+      const { seasons: found } = await animeSeasons(show.id)
+      setSeasons(found)
+      const same = found.find((s) => String(s.id) === String(show.id))
+        ?? found.find((s) => s.name === show.name)
+      if (same) choose(same)
+    } catch (err) {
+      setProblem(err.message)
+      setSeasons([])
+    }
+  }
+
   function choose(next) {
     setSeason(next)
     // Coming back to the season already attached keeps what was picked; a
@@ -193,18 +231,24 @@ export default function AnimeSearch({ block, startWith, onAttach, onCancel }) {
       if (block.show) { e.stopPropagation(); onCancel() }
       return
     }
-    if (results.length === 0) return
+    // Before anything is typed the arrows and Enter work the shows watched
+    // lately instead — so Enter alone carries on with the last one.
+    const offering = showingRecent ? recent : results
+    if (offering.length === 0) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setCursor((c) => Math.min(results.length - 1, c + 1))
+      setCursor((c) => Math.min(offering.length - 1, c + 1))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setCursor((c) => Math.max(0, c - 1))
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      pick(results[cursor])
+      if (showingRecent) pickRecent(recent[Math.min(cursor, recent.length - 1)])
+      else pick(results[cursor])
     }
   }
+
+  const showingRecent = step === 'find' && query.trim() === '' && recent.length > 0
 
   return (
     <div className="gamepick">
@@ -216,7 +260,7 @@ export default function AnimeSearch({ block, startWith, onAttach, onCancel }) {
             type="text"
             value={query}
             placeholder={block.show ? `Instead of ${block.show}…` : 'Which anime?'}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); setCursor(0) }}
             onKeyDown={onKeyDown}
           />
           {state === 'searching' && <span className="gamenote">looking…</span>}
@@ -237,7 +281,40 @@ export default function AnimeSearch({ block, startWith, onAttach, onCancel }) {
       {/* The card is not empty, it is unwritten — same as a day with nothing
           on it. Only before anything is typed, and only when there is nothing
           to go back to; changing a show already says what it is changing. */}
-      {step === 'find' && state === 'idle' && !block.show && (
+      {showingRecent && (
+        <div className="recentshows">
+          <span className="gamerule" aria-hidden="true"><i /></span>
+          <ul className="recentlist">
+            {recent.map((show, i) => {
+              const cover = covers?.get(`show:${show.name}`)
+              return (
+                <li key={show.name}>
+                  <button
+                    type="button"
+                    className={`recentshow${i === cursor ? ' on' : ''}`}
+                    title={`${show.name} — straight to its episodes`}
+                    onMouseEnter={() => setCursor(i)}
+                    onClick={() => pickRecent(show)}
+                  >
+                    {cover
+                      ? <img className="recentshot" src={coverUrl(cover)} alt="" loading="lazy" />
+                      : <span className="recentshot none" aria-hidden="true">🌸</span>}
+                    <span className="recentbody">
+                      <span className="recentname">{show.name}</span>
+                      <span className="recentwhen">
+                        {show.upTo > 0 && <>ep {show.upTo} · </>}
+                        {whenOf(show.last)}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+
+      {step === 'find' && state === 'idle' && !block.show && !showingRecent && (
         <p className="gameunnamed">
           <span className="gamerule" aria-hidden="true"><i /></span>
           Something unwatched
@@ -358,4 +435,13 @@ function countOf(show) {
   if (show.aired === 0) return show.year ? 'not out yet' : ''
   if (show.episodes && show.aired >= show.episodes) return `${show.episodes} episodes`
   return `${show.aired} of ${show.episodes ?? '?'} aired`
+}
+
+/** When a show was last on, the way you would say it. */
+function whenOf(date) {
+  if (!date) return ''
+  const today = todayISO()
+  if (date === today) return 'today'
+  if (date === shiftDate(today, -1)) return 'yesterday'
+  return `${weekdayOf(date)} ${formatShortDate(date)}`
 }

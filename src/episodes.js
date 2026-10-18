@@ -37,3 +37,30 @@ export function episodeLabel(list) {
 export function furthest(list) {
   return (list ?? []).reduce((a, b) => Math.max(a, b), 0)
 }
+
+/**
+ * The shows watched most recently, newest first — what an Anime block offers
+ * before anything is typed, since most evenings are the next episode of
+ * something already on the go.
+ *
+ * Only shows that have actually been watched (logged on some day) and that
+ * the season lookup knows by an id, since picking one goes straight to its
+ * episodes. `all` is what /api/anime/watched answers; `leave` is a show not
+ * to offer, the one the block already is.
+ *
+ * Returns [{ name, id, last, upTo }].
+ */
+export function recentShows(all, leave = '', count = 4) {
+  return Object.entries(all ?? {})
+    .map(([name, show]) => ({
+      name,
+      id: show.anilistId ?? (show.kitsuId ? `kitsu-${show.kitsuId}` : null),
+      at: show.lastAt ?? (show.last ? `${show.last} 00:00` : ''),
+      last: show.last,
+      upTo: furthest(show.seen),
+    }))
+    .filter((show) => show.id && show.at && show.name !== leave)
+    .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
+    .slice(0, count)
+    .map(({ at, ...show }) => show)
+}

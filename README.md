@@ -260,6 +260,12 @@ season out so far means eight boxes; there is no honest way to have watched
 the ninth. Episodes already written down on some other day are underlined, so
 a show you are part-way through opens where you left it rather than at one.
 
+Most evenings are the next episode of something already on the go, so before
+anything is typed the box offers the **last four shows watched**, newest
+first, each with the furthest episode and when. Clicking one (or pressing
+Enter for the newest) skips the first two steps and opens straight on that
+season's episodes.
+
 The note keeps the name and the numbers in plain text:
 
 ```json
