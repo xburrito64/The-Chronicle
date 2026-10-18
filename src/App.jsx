@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import DayList, { ZOOM } from './DayList.jsx'
 import NotePanel from './NotePanel.jsx'
+import UpdateBanner from './UpdateBanner.jsx'
 import Totals from './Totals.jsx'
 import FindBar from './FindBar.jsx'
 import Settings from './Settings.jsx'
@@ -705,6 +706,8 @@ export default function App() {
       </header>
 
       <div className="goldrule" />
+
+      <UpdateBanner />
 
       {find && (
         <FindBar

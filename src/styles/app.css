@@ -250,6 +250,61 @@ h1 {
   border-color: color-mix(in srgb, var(--c-accent) 45%, var(--c-line));
   color: var(--c-text);
 }
+/* A new version: the same invitation as the setup banner, with a line of
+   buttons at its end and what is new folded away under it. */
+.banner.update {
+  background: color-mix(in srgb, var(--c-accent) 10%, var(--c-bg));
+  border-color: color-mix(in srgb, var(--c-accent) 45%, var(--c-line));
+  color: var(--c-text);
+}
+.updateline { display: flex; align-items: center; gap: var(--s-5); flex-wrap: wrap; }
+.updatemark { color: var(--c-accent); }
+.updatewords b { color: var(--c-accent); font-weight: var(--w-medium); }
+.updatebuttons { display: flex; align-items: center; gap: var(--s-5); margin-left: auto; }
+.updatebuttons .bannerbutton { margin-left: 0; }
+.updatelink {
+  padding: 0;
+  font: inherit;
+  color: var(--c-text-dim);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.updatelink:hover { color: var(--c-text); }
+.updatelink:focus-visible { outline: 2px solid var(--c-focus-ring); outline-offset: 2px; }
+/* How far the download has got, in the theme's gold. */
+.updatebar {
+  flex: 0 1 160px;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--c-accent) 18%, transparent);
+  overflow: hidden;
+}
+.updatebar i { display: block; height: 100%; background: var(--c-accent); transition: width 0.3s ease; }
+.updatenotes {
+  max-width: 70ch;
+  max-height: 240px;
+  overflow-y: auto;
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid color-mix(in srgb, var(--c-accent) 25%, var(--c-line));
+}
+.updatehead {
+  margin: var(--s-3) 0 var(--s-1);
+  font-weight: var(--w-medium);
+  color: var(--c-accent);
+}
+.updatenote {
+  position: relative;
+  margin: 0 0 var(--s-2);
+  padding-left: var(--s-6);
+  color: var(--c-text-dim);
+  line-height: 1.45;
+}
+.updatenote::before { content: "✦"; position: absolute; left: 0; color: var(--c-accent); font-size: 0.7em; top: 0.25em; }
+
 .bannerbutton {
   margin-left: auto;
   padding: var(--s-3) var(--s-6);

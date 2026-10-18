@@ -26,3 +26,6 @@ tag-icons/**/[Ss]moke*
 tag-icons/**/[Dd][Gg][Gg]*
 tag-icons/**/[Vv]ibe-[Cc]oding*
 tag-icons/**/[Ww]alk-[Cc]oco*
+
+# An overview sheet of every icon, personal ones included: not an icon itself.
+tag-icons/**/all.png
