@@ -25,6 +25,13 @@
 // than instead: RAWG still knows nine hundred thousand games Steam never
 // sold, and what it says about a game is richer.
 //
+// And RAWG does go down, sometimes for a day at a time. Steam alone cannot
+// cover for it, since the games it never sold — Fortnite, Minecraft — are
+// exactly the ones it has no answer for. SteamGridDB can find those by name
+// as well as draw them, so while RAWG is failing, and only then, it is asked
+// for names too. It knows little about a game beyond its name and year, but a
+// name and a cover are the record.
+//
 // Copying the cover into the vault is the part that matters. The folder still
 // reads offline, still reads in five years, and still reads if this app is
 // gone. Nothing here ever writes into a note; covers live in their own folder.
@@ -61,6 +68,13 @@ const STEAM_EXTRA = 4
 const GRID_API = 'https://www.steamgriddb.com/api/v2'
 const GRID_HOST_RE = /^cdn\d*\.steamgriddb\.com$/
 const GRID_SIZE = { width: 600, height: 900 }
+const GRID_WANTED = { dimensions: '600x900', types: 'static', nsfw: 'false', humor: 'false' }
+// A game found on SteamGridDB wears its name too, for the same reason a game
+// off Steam's shelf does: it counts from one like the others do.
+const GRID_PREFIX = 'grid-'
+// How many games it may offer while RAWG is out. It files spin-offs and fan
+// projects under a name as well, and past this it is mostly those.
+const GRID_EXTRA = 6
 
 // What is known about each game, beside the covers it belongs with.
 const FACTS_FILE = 'games.json'
@@ -118,6 +132,10 @@ export const REFILL_EVERY_MS = 6 * 60 * 60_000
 const upstream = (message) => Object.assign(new Error(message), { status: 502 })
 /** Something arrived that we are not going to act on. */
 const refused = (message) => Object.assign(new Error(message), { status: 400 })
+/** RAWG not answering, in words rather than in whatever the network said. */
+const rawgDown = () => upstream(
+  "RAWG, the game database, isn't answering right now, and nowhere else knew that name. Try again in a while.",
+)
 
 /** Smallest thing that behaves like a cache: oldest out once it's full. */
 function boundedCache(limit) {
@@ -152,14 +170,24 @@ export function steamId(raw) {
   return Number.isInteger(number) && number > 0 ? number : null
 }
 
+/** The SteamGridDB number inside a game id, or null if that is not what this is. */
+export function gridId(raw) {
+  const text = String(raw ?? '').trim()
+  if (!text.startsWith(GRID_PREFIX)) return null
+  const number = Number(text.slice(GRID_PREFIX.length))
+  return Number.isInteger(number) && number > 0 ? number : null
+}
+
 /**
  * What a game id is for on disk: the tail of its cover's filename. RAWG's is
  * the bare number, as it has always been, so nothing already in a vault
- * moves; Steam's keeps the shop's name so the two can never share a file.
+ * moves; the others keep their source's name so no two can share a file.
  */
 export function gameStamp(raw) {
   const steam = steamId(raw)
   if (steam) return `${STEAM_PREFIX}${steam}`
+  const grid = gridId(raw)
+  if (grid) return `${GRID_PREFIX}${grid}`
   const number = Number(raw)
   return Number.isInteger(number) && number > 0 ? String(number) : null
 }
@@ -246,6 +274,25 @@ export function shapeSteam(appId, details) {
       .filter(Boolean)
       .sort((a, b) => (a === 'PC' ? -1 : b === 'PC' ? 1 : 0)),
     description: shorten(d.short_description),
+  }
+}
+
+/**
+ * A game as this app talks about it, from a game as SteamGridDB files it. Its
+ * release date is in seconds, and is sometimes not there at all.
+ */
+export function shapeGrid(entry) {
+  const seconds = Number(entry?.release_date)
+  return {
+    id: `${GRID_PREFIX}${entry?.id}`,
+    appId: '',
+    type: 'game',
+    name: String(entry?.name ?? '').trim(),
+    released: seconds > 0 ? String(new Date(seconds * 1000).getUTCFullYear()) : '',
+    cover: '',
+    genres: [],
+    platforms: [],
+    description: '',
   }
 }
 
@@ -363,8 +410,14 @@ export function createGames({ apiKey, gridKey = '', coversDir }) {
   async function ask(pathname, params, timeout) {
     const url = new URL(API + pathname)
     url.search = new URLSearchParams({ ...params, key: keyNow() }).toString()
-    const res = await fetch(url, { signal: AbortSignal.timeout(timeout) })
+    let res
+    try {
+      res = await fetch(url, { signal: AbortSignal.timeout(timeout) })
+    } catch {
+      throw rawgDown()
+    }
     if (res.status === 401) throw upstream('RAWG turned the key down — check rawgKey in config.json')
+    if (res.status >= 500) throw rawgDown()
     if (!res.ok) throw upstream(`RAWG answered ${res.status}`)
     return res.json()
   }
@@ -485,11 +538,10 @@ export function createGames({ apiKey, gridKey = '', coversDir }) {
    */
   async function gridCover(name, appId) {
     if (!gridNow()) return ''
-    const wanted = { dimensions: '600x900', types: 'static', nsfw: 'false', humor: 'false' }
 
     // By Steam id first, where there is one.
     if (appId) {
-      const found = await someGrid(`/grids/steam/${appId}`, wanted)
+      const found = await someGrid(`/grids/steam/${appId}`, GRID_WANTED)
       if (found) return found
     }
 
@@ -499,13 +551,30 @@ export function createGames({ apiKey, gridKey = '', coversDir }) {
       const hits = await askGrid(`/search/autocomplete/${encodeURIComponent(name)}`)
       const game = (hits?.data ?? [])[0]
       if (!game?.id) return ''
-      return await someGrid(`/grids/game/${game.id}`, wanted)
+      return await someGrid(`/grids/game/${game.id}`, GRID_WANTED)
     } catch (err) {
       // Said out loud rather than only swallowed. A game with no cover
       // anywhere and a game whose key was typed wrong look identical from
       // the outside, and only one of them is worth doing something about.
       console.error(`no SteamGridDB cover for "${name}": ${err.message}`)
       return ''
+    }
+  }
+
+  /**
+   * Games SteamGridDB has filed under what was typed. Only asked while RAWG is
+   * failing, and failing here too just leaves the list as short as it was.
+   */
+  async function gridSearch(q) {
+    if (!gridNow()) return []
+    try {
+      const body = await askGrid(`/search/autocomplete/${encodeURIComponent(q)}`)
+      return (body?.data ?? [])
+        .map(shapeGrid)
+        .filter((game) => gridId(game.id) && game.name)
+    } catch (err) {
+      console.error(`SteamGridDB, asked for "${q}" while RAWG is out: ${err.message}`)
+      return []
     }
   }
 
@@ -542,7 +611,14 @@ export function createGames({ apiKey, gridKey = '', coversDir }) {
 
     let appId = ''
     // Only a RAWG game has a RAWG page to ask about shops. One off Steam's own
-    // shelf already is its app id.
+    // shelf already is its app id, and one found on SteamGridDB is asked for
+    // there by its own number, which names it exactly.
+    const grid = gridId(id)
+    if (grid) {
+      const found = gridNow() ? await someGrid(`/grids/game/${grid}`, GRID_WANTED) : ''
+      covers.set(at, { cover: found, when: Date.now() })
+      return found
+    }
     if (!steamId(id)) {
       try {
         const body = await ask(`/games/${id}/stores`, {}, SEARCH_TIMEOUT_MS)
@@ -594,8 +670,8 @@ export function createGames({ apiKey, gridKey = '', coversDir }) {
       // to confuse it for — Hades, Minecraft — it changes nothing at all.
       //
       // Both shelves at once. RAWG failing is still a failure — unless Steam
-      // came back with something, in which case a shorter list beats a red
-      // panel.
+      // or SteamGridDB came back with something, in which case a shorter list
+      // beats a red panel.
       const [asked, shelf] = await Promise.all([
         ask(
           '/games',
@@ -604,7 +680,6 @@ export function createGames({ apiKey, gridKey = '', coversDir }) {
         ).then((body) => ({ body }), (error) => ({ error })),
         steamSearch(q),
       ])
-      if (asked.error && shelf.length === 0) throw asked.error
       const found = (asked.body?.results ?? []).slice(0, RESULTS)
 
       // Where Steam's shelf and RAWG's list name the same game, RAWG's entry
@@ -618,6 +693,12 @@ export function createGames({ apiKey, gridKey = '', coversDir }) {
         if (twin) hints.set(twin.id, game.appId)
         else if (game.type === 'game') spare.push(game)
       }
+
+      // Steam's listing wins where both know a game: it says more about it.
+      const borrowed = asked.error
+        ? (await gridSearch(q)).filter((game) => !twinOf(game, spare)).slice(0, GRID_EXTRA)
+        : []
+      if (asked.error && spare.length === 0 && borrowed.length === 0) throw asked.error
 
       // Every result is worked out beside every other one. Eight games one
       // after another would be a wait; eight at once is one.
@@ -641,14 +722,15 @@ export function createGames({ apiKey, gridKey = '', coversDir }) {
         }
       }))
 
-      const added = await Promise.all(spare.slice(0, STEAM_EXTRA).map(async (game) => {
+      const extras = [...spare.slice(0, STEAM_EXTRA), ...borrowed]
+      const added = await Promise.all(extras.map(async (game) => {
         const { appId, type, ...shown } = game
         return { ...shown, cover: await coverOf(game.id, game.name, appId) }
       }))
 
       // A game whose name is exactly what was typed is the game that was
       // meant, and goes to the top whichever shelf it came off. The rest of
-      // what Steam added goes to the bottom: it is only there in case.
+      // what was added goes to the bottom: it is only there in case.
       const wanted = plainName(q)
       const meant = added.filter((g) => plainName(g.name) === wanted)
       const rest = added.filter((g) => plainName(g.name) !== wanted)

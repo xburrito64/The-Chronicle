@@ -64,6 +64,9 @@ export default function GameSearch({ block, onAttach, onCancel }) {
     const controller = new AbortController()
     const timer = setTimeout(async () => {
       setState('searching')
+      // The last search's trouble is not this one's. Left up, an outage that
+      // has since passed would sit above a perfectly good list of results.
+      setProblem('')
       try {
         const body = await searchGames(q, controller.signal)
         if (controller.signal.aborted) return

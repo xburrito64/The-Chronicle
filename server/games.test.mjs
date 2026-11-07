@@ -4,7 +4,7 @@ import os from 'node:os'
 import nodePath from 'node:path'
 import {
   slugify, steamCover, coverSource, cleanGenres, pickGrid, createGames,
-  steamId, gameStamp, plainName, gameGap, twinOf, shapeSteam,
+  steamId, gridId, gameStamp, plainName, gameGap, twinOf, shapeSteam, shapeGrid,
 } from './games.js'
 
 let pass = 0, fail = 0
@@ -346,6 +346,117 @@ await t('a pick and a refill at the same moment both land', async () => {
   assert.equal(now['Picked Just Now'].id, 7, 'and a new pick remembers exactly which game it was')
 })
 
+// --- RAWG being down ---------------------------------------------------------
+//
+// The same stand-in idea. `rawg` says how RAWG is failing, or that it is fine;
+// Steam sells Hades and nothing else; SteamGridDB knows Fortnite and Hades.
+
+const GRID_COVER = 'https://cdn2.steamgriddb.com/grid/fortnite.png'
+const gridGames = {
+  fortnite: [
+    { id: 36136, name: 'Fortnite', release_date: 1500940800 },
+    { id: 5438682, name: 'Fortnite Festival', release_date: 1702080000 },
+    { id: 99, name: 'Fortnite Porting' },
+  ],
+  hades: [{ id: 7, name: 'Hades', release_date: 1600300800 }],
+}
+let rawg = 'timeout'
+const down = []
+const outage = async (input, init = {}) => {
+  const url = String(input)
+  down.push(url)
+  if (url.includes('api.rawg.io')) {
+    if (rawg === 'timeout') throw new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+    if (rawg === '522') return new Response('', { status: 522 })
+    if (url.includes('/games?')) return Response.json({ results: [{ id: 1, name: 'Fortnite', released: '2017-07-25' }] })
+    return Response.json({ results: [], description_raw: '' })
+  }
+  if (url.includes('/api/storesearch/')) {
+    return Response.json({ items: url.includes('hades') ? [{ type: 'app', id: 1145360 }] : [] })
+  }
+  if (url.includes('/api/appdetails')) {
+    return Response.json({ 1145360: { success: true, data: { type: 'game', name: 'Hades', release_date: { date: '17 Sep, 2020' } } } })
+  }
+  if (url.includes('/search/autocomplete/')) {
+    const term = decodeURIComponent(url.split('/search/autocomplete/')[1])
+    return Response.json({ data: gridGames[term] ?? [] })
+  }
+  if (url.includes('/grids/game/36136')) {
+    return Response.json({ data: [{ width: 600, height: 900, score: 1, url: GRID_COVER }] })
+  }
+  if (url.includes('/grids/')) return Response.json({ data: [] })
+  if (init.method === 'HEAD') return new Response(null, { status: 404 })
+  return new Response('a picture', { status: 200 })
+}
+globalThis.fetch = outage
+
+const quiet = console.error
+console.error = () => {}
+const withGrid = () => createGames({ apiKey: 'a key', gridKey: 'a grid key', coversDir: shelf })
+
+await t('a SteamGridDB game has an id of its own, and a year if it says one', () => {
+  assert.equal(gridId('grid-36136'), 36136)
+  assert.equal(gridId(36136), null)
+  assert.equal(gridId('grid-0'), null)
+  assert.equal(gameStamp('grid-36136'), 'grid-36136')
+  assert.equal(shapeGrid({ id: 36136, name: 'Fortnite', release_date: 1500940800 }).released, '2017')
+  assert.equal(shapeGrid({ id: 99, name: 'Undated' }).released, '')
+})
+
+for (const failure of ['timeout', '522']) {
+  await t(`with RAWG failing by ${failure}, a game Steam never sold is still found`, async () => {
+    rawg = failure
+    const results = await withGrid().search('fortnite')
+    assert.equal(results[0].name, 'Fortnite', 'what was typed comes first')
+    assert.equal(results[0].id, 'grid-36136')
+    assert.equal(results[0].released, '2017')
+    assert.equal(results[0].cover, GRID_COVER)
+    assert.equal(results.length, 3)
+  })
+}
+
+await t('a game Steam and SteamGridDB both know is listed once, as Steam has it', async () => {
+  rawg = 'timeout'
+  const results = await withGrid().search('hades')
+  assert.deepEqual(results.map((game) => game.id), ['steam-1145360'])
+})
+
+await t('a game found this way keeps its cover under its own name', async () => {
+  rawg = 'timeout'
+  const games = withGrid()
+  const [game] = await games.search('fortnite')
+  const kept = await games.keep({ id: game.id, name: game.name, image: game.cover })
+  assert.equal(kept.cover, 'fortnite-grid-36136.png')
+})
+
+await t('nowhere knowing the name says RAWG is down, in words', async () => {
+  rawg = 'timeout'
+  await assert.rejects(withGrid().search('nothing called this'), (err) => {
+    assert.match(err.message, /isn't answering/)
+    assert.equal(err.status, 502)
+    return true
+  })
+})
+
+await t('without a SteamGridDB key it says so too, and asks nobody without one', async () => {
+  rawg = '522'
+  down.length = 0
+  await assert.rejects(
+    createGames({ apiKey: 'a key', coversDir: shelf }).search('fortnite'),
+    /isn't answering/,
+  )
+  assert.ok(!down.some((url) => url.includes('steamgriddb')))
+})
+
+await t('with RAWG answering, SteamGridDB is not asked for names', async () => {
+  rawg = 'fine'
+  down.length = 0
+  const results = await withGrid().search('fortnite')
+  assert.equal(results[0].id, 1)
+  assert.ok(!down.some((url) => url.includes('/search/autocomplete/fortnite')))
+})
+
+console.error = quiet
 globalThis.fetch = realFetch
 await fs.rm(shelf, { recursive: true, force: true })
 

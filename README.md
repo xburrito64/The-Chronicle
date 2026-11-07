@@ -222,6 +222,11 @@ collect the covers for both cases at the size Steam uses. It wants a free key
 in `steamGridKey` — sign in there with your Steam account, then Preferences →
 API. Without one this ends where it used to: a name and no picture.
 
+RAWG does go down now and then. While it is failing, SteamGridDB is asked for
+names as well as pictures, so a game Steam never sold can still be found. If
+nowhere knows the name, or there is no `steamGridKey` to ask with, the search
+box says RAWG isn't answering.
+
 A game with no cover anywhere still keeps its name, which is the record.
 
 A cover that was found stays found; a cover that was *not* found is believed
